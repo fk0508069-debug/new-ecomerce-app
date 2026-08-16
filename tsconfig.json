@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "lib/mongodb.js", "app/login/page.jsx", "app/page.jsx", "app/index/[id]/page.tsx", "app/signup/page.jsx", "components/Navbar.tsx", "app/details/[id]/page.tsx"  ],
   "exclude": ["node_modules"]
 }
