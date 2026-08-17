@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 export default function SignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
@@ -88,6 +88,9 @@ export default function SignupPage() {
         >
           {loading ? "Signing up..." : "Sign Up"}
         </button>
+        <Link href='/login' className="text-sm text-blue-600 hover:underline">
+          Already have an account? Log in
+        </Link>
       </form>
     </div>
   );

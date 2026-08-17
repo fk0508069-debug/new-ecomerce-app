@@ -361,15 +361,7 @@ export default function ProductDetailPage() {
                       )}
                     </div>
 
-                    {/* Quick anchor to checkout */}
-                    <div className="mt-6">
-                      <a
-                        href="#checkout"
-                        className="inline-block w-full rounded-full bg-amber-500 py-3 text-center font-semibold text-white transition hover:bg-amber-600"
-                      >
-                        Proceed to Checkout ↓
-                      </a>
-                    </div>
+                 
                   </div>
                 </div>
 

@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
@@ -13,7 +12,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
 
   const isAdmin = user?.role === "admin";
-
+  
   // Fetch products from API
   const fetchProducts = async () => {
     try {
@@ -30,20 +29,21 @@ export default function HomePage() {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchProducts();
   }, []);
-
+  
   // Delete product (admin only)
   const handleDelete = async (productId) => {
     if (!productId || !window.confirm("Delete this product?")) return;
-
+    
     try {
       const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete product");
       setProducts((prev) => prev.filter((p) => (p._id || p.id) !== productId));
+   
     } catch (err) {
       alert(err.message || "Unable to delete product");
     }

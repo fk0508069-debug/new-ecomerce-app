@@ -16,21 +16,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
 
-      const data = await res.json();
+  const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to log in");
-      }
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to log in");
+  }
 
-      localStorage.setItem("user", JSON.stringify(data.user));
-      router.replace("/");
-    } catch (err) {
+  localStorage.setItem("user", JSON.stringify(data.user));
+
+  router.replace("/");
+  router.refresh();
+}catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
