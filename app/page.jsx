@@ -1,10 +1,10 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
+import HeroSection from "@/components/HeroSection";
 import { useAuth } from "@/context/AuthContext";
-
+import ChatBot from "@/components/chatBot"
 export default function HomePage() {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
@@ -31,7 +31,11 @@ export default function HomePage() {
   };
   
   useEffect(() => {
-    fetchProducts();
+    async function loadProducts() {
+      await fetchProducts();
+    }
+
+    loadProducts();
   }, []);
   
   // Delete product (admin only)
@@ -49,13 +53,14 @@ export default function HomePage() {
     }
   };
 
+  // router.refresh();
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-slate-100">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* ===== Hero Banner ===== */}
-        
+          <HeroSection />
 
           {/* ===== Product Grid ===== */}
           {loading ? (
@@ -82,6 +87,7 @@ export default function HomePage() {
               ))}
             </div>
           )}
+          <ChatBot />
         </div>
       </main>
     </>

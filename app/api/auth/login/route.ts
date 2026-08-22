@@ -7,9 +7,11 @@ import User from "@/models/User";
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
 
 export async function POST(req: Request) {
+    
   try {
     const { email, password } = await req.json();
-
+    
+    
     if (!email || !password) {
       return NextResponse.json(
         { error: "Please provide both email and password" },
@@ -20,13 +22,15 @@ export async function POST(req: Request) {
     await connectDB();
 
     const user = await User.findOne({ email });
+
+    
     if (!user) {
       return NextResponse.json(
         { error: "Invalid email" },
         { status: 401 }
       );
     }
-
+    
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
@@ -38,9 +42,9 @@ export async function POST(req: Request) {
     const token = jwt.sign(
       { userId: user._id, email: user.email, name: user.name, role: user.role },
       JWT_SECRET,
-      { expiresIn: "2d" }
+      { expiresIn: "1d" }
     );
-
+    
     const response = NextResponse.json(
       {
         message: "Login successful",
@@ -53,15 +57,17 @@ export async function POST(req: Request) {
       },
       { status: 200 }
     );
-
+    console.log("Login successful for user:", user.email);
+    
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 2 * 24 * 60 * 60,
+      maxAge:  24 * 60 * 60,
       path: "/",
+      
     });
-
+    
     return response;
   } catch (error) {
     console.error("Login error:", error);
@@ -70,4 +76,14 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+  const body = await req.json();
+  
+  console.log("Received JSON:", body);
+  
+  return NextResponse.json({
+    success: true,
+    message: "Login request received",
+    data: body,
+  });
 }
+

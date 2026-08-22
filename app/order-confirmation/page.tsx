@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const trackingNumber = searchParams.get("tracking_number");
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
@@ -20,9 +21,11 @@ function OrderConfirmationContent() {
         </p>
 
     
-        {orderId && (
-          <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Order ID: <span className="font-semibold">{orderId}</span>
+      
+
+        {trackingNumber && (
+          <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Tracking number: <span className="font-semibold">{trackingNumber}</span>
           </p>
         )}
 

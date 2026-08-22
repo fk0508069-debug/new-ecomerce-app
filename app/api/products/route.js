@@ -28,6 +28,7 @@ function getUserFromToken(req) {
 // /api/products?category=Fashion
 // /api/products?category=Fashion&subcategory=Men
 // /api/products?category=Fashion&subcategory=Men&subsubcategory=Shirts
+// /api/products?hero=true                (NEW: fetch hero products)
 // ==============================
 export async function GET(req) {
   try {
@@ -38,6 +39,7 @@ export async function GET(req) {
     const category = searchParams.get("category");
     const subcategory = searchParams.get("subcategory");
     const subsubcategory = searchParams.get("subsubcategory");
+    const hero = searchParams.get("hero"); // ✅ NEW
 
     const limit = Math.min(
       Math.max(
@@ -68,6 +70,11 @@ export async function GET(req) {
         $regex: `^${escapeRegex(subsubcategory)}$`,
         $options: "i",
       };
+    }
+
+    // ✅ If hero=true, only return products marked for hero section
+    if (hero === "true") {
+      filter.isHero = true;
     }
 
     const products = await Product.find(filter)
@@ -119,6 +126,7 @@ export async function POST(req) {
       subsubcategory,
       stock,
       images,
+      isHero, // ✅ NEW
     } = body;
 
     if (
@@ -176,6 +184,7 @@ export async function POST(req) {
       subsubcategory: subsubcategory.trim(),
       stock: productStock,
       images,
+      isHero: isHero === true, // ✅ store as boolean
     });
 
     return NextResponse.json(

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-
+import ProductSearch  from "../components/ProductSearch";
 interface NavbarProps {
   onSearch?: (query: string) => void;
 }
@@ -15,19 +15,21 @@ export default function Navbar({ onSearch }: NavbarProps) {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   const router = useRouter();
-
+  
+  
   const handleLogout = async () => {
     await logout();
     setMobileMenuOpen(false);
     router.push("/login");
     router.refresh();
   };
-
+  // router.refresh()
+  
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 transition hover:opacity-90">
+        <Link href={`/home/${user?.id}`}className="flex items-center gap-2 transition hover:opacity-90">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-lg text-white shadow-sm">
             🛍️
           </span>
@@ -37,31 +39,10 @@ export default function Navbar({ onSearch }: NavbarProps) {
         </Link>
 
         {/* Desktop Search Bar */}
-        <div className="hidden max-w-md flex-1 md:block">
-          <div className="relative">
-            <svg
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search products, brands, categories..."
-              onChange={(e) => onSearch?.(e.target.value)}
-              className="w-full rounded-full border border-gray-200 bg-gray-50/75 py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-200"
-            />
-          </div>
-        </div>
-
+       
+<div className="hidden max-w-md flex-1 md:block">
+  <ProductSearch />
+</div>
         {/* Desktop Navigation & Actions */}
         <div className="hidden items-center gap-5 md:flex">
           <Link
@@ -84,7 +65,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
               />
             </svg>
             {totalItems > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white shadow-sm">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white shadow-sm">
                 {totalItems}
               </span>
             )}
@@ -145,7 +126,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
               />
             </svg>
             {totalItems > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-white">
                 {totalItems}
               </span>
             )}
@@ -188,13 +169,8 @@ export default function Navbar({ onSearch }: NavbarProps) {
                 d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
               />
             </svg>
-            <input
-              type="text"
-              placeholder="Search products..."
-              onChange={(e) => onSearch?.(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500"
-            />
           </div>
+           <ProductSearch />
 
           <div className="flex flex-col gap-2 pt-2">
             {user ? (

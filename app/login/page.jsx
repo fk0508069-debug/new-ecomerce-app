@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,21 +18,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData),
-  });
+  const loggedInUser = await login(formData.email, formData.password);
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Failed to log in");
-  }
-
-  localStorage.setItem("user", JSON.stringify(data.user));
-
-  router.replace("/");
+  router.replace(`/home/${loggedInUser.id}`);
   router.refresh();
 }catch (err) {
       setError(err.message || "Something went wrong");

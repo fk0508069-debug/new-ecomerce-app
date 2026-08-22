@@ -16,18 +16,23 @@ export type Product = {
 
 export default function ProductCard({
   product,
+  isRecommendation = false,
   isAdmin = false,
   onDelete,
 }: {
   product: Product;
+  isRecommendation?: boolean;
   isAdmin?: boolean;
   onDelete?: (id: string) => void;
 }) {
   const { addToCart } = useCart();
+
   const productId = product._id || product.id || "";
-  const imageUrl = Array.isArray(product.images) && product.images.length > 0
-    ? product.images[0]
-    : "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80";
+
+  const imageUrl =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images[0]
+      : "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
@@ -40,6 +45,7 @@ export default function ProductCard({
             loading="lazy"
           />
         </Link>
+
         {isAdmin && (
           <div className="absolute right-3 top-3 flex gap-2">
             <Link
@@ -48,6 +54,7 @@ export default function ProductCard({
             >
               Edit
             </Link>
+
             <button
               type="button"
               onClick={() => productId && onDelete?.(productId)}
@@ -64,31 +71,38 @@ export default function ProductCard({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
             {product.category}
           </p>
-          <h3 className="mt-1 text-lg font-bold text-slate-800">{product.name}</h3>
+
+          <h3 className="mt-1 text-lg font-bold text-slate-800">
+            {product.name}
+          </h3>
         </div>
 
         <p className="line-clamp-2 text-sm text-slate-600">
-          {product.description || "Freshly added product from the catalog."}
+          {product.description ||
+            "Freshly added product from the catalog."}
         </p>
 
         <div className="flex items-center justify-between gap-3">
           <span className="text-xl font-bold text-slate-900">
-            ${Number(product.price || 0).toFixed(2)}
+            Rs {Number(product.price || 0).toFixed(2)}
           </span>
-          <button
-            type="button"
-            onClick={() =>
-              addToCart({
-                id: productId,
-                name: product.name,
-                price: Number(product.price || 0),
-                image: imageUrl,
-              })
-            }
-            className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600"
-          >
-            Add to cart
-          </button>
+
+          {!isRecommendation && (
+            <button
+              type="button"
+              onClick={() =>
+                addToCart({
+                  id: productId,
+                  name: product.name,
+                  price: Number(product.price || 0),
+                  image: imageUrl,
+                })
+              }
+              className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600"
+            >
+              Add to cart
+            </button>
+          )}
         </div>
       </div>
     </div>

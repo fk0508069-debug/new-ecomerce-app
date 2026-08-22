@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import ChatBot from "@/components/chatBot";
+
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -95,6 +97,7 @@ export default function UserProfilePage() {
           </div>
         </div>
       </main>
+      <ChatBot />
     </>
   );
 }

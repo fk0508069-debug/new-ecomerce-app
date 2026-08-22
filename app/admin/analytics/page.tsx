@@ -1,5 +1,5 @@
 "use client";
-
+import ChatBot from "@/components/chatBot";
 import Orders from "@/components/order";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -860,6 +860,7 @@ function SmallMetric({
       <p className="text-xs font-medium text-slate-500">
         {label}
       </p>
+<ChatBot />
 
       <p className={`mt-2 text-2xl font-bold ${color}`}>
         {value.toLocaleString()}

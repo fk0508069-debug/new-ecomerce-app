@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import { randomInt } from "crypto";
 
 export async function GET() {
   try {
@@ -67,8 +68,19 @@ export async function POST(req: Request) {
     const deliveryFee = 50;
     const total = subtotal + deliveryFee;
 
+    let trackingNumber = "";
+    do {
+      const digits = randomInt(8, 10);
+      const firstDigit = randomInt(1, 10);
+      const remainingDigits = randomInt(0, 10 ** (digits - 1))
+        .toString()
+        .padStart(digits - 1, "0");
+      trackingNumber = `${firstDigit}${remainingDigits}`;
+    } while (await Order.exists({ tracking_number: trackingNumber }));
+
     const order = await Order.create({
       userId: userId || null,
+      tracking_number: trackingNumber,
       items: orderItems,
 
       subtotal,
@@ -80,7 +92,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      { message: "Order placed successfully", orderId: order._id },
+      {
+        message: "Order placed successfully",
+        orderId: order._id,
+        tracking_number: order.tracking_number,
+      },
       { status: 201 }
     );
   } catch (error: any) {

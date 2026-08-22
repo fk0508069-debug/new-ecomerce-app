@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { X, Upload, ChevronDown } from "lucide-react";
+import { X, Upload, ChevronDown, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const CATEGORY_DATA = {
@@ -245,6 +245,7 @@ export default function AddProductPage() {
     subcategory: "",
     subsubcategory: "",
     stock: "0",
+    isHero: false, // new field
   });
 
   const [images, setImages] = useState([]);
@@ -397,6 +398,7 @@ export default function AddProductPage() {
           subsubcategory: formData.subsubcategory,
           stock: Number(formData.stock || 0),
           images,
+          isHero: formData.isHero, // send the hero flag
         }),
       });
 
@@ -406,7 +408,7 @@ export default function AddProductPage() {
         throw new Error(data.error || "Failed to create product");
       }
 
-      router.push("/");
+      router.push(`/home/${user.id}`);
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -419,10 +421,7 @@ export default function AddProductPage() {
       <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 text-slate-600">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
-
-          <p className="mt-4 font-medium">
-            Checking admin access...
-          </p>
+          <p className="mt-4 font-medium">Checking admin access...</p>
         </div>
       </div>
     );
@@ -431,20 +430,17 @@ export default function AddProductPage() {
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-4xl">
-
         {/* Header */}
         <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">
               Admin Panel
             </p>
-
             <h1 className="mt-2 text-4xl font-bold text-slate-900">
               Add New Product
             </h1>
-
             <p className="mt-1 text-slate-600">
-              Add product information, categories and images
+              Fill in the details below to list a new product.
             </p>
           </div>
 
@@ -466,9 +462,7 @@ export default function AddProductPage() {
             </div>
 
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-900">
-                {error}
-              </p>
+              <p className="text-sm font-medium text-red-900">{error}</p>
             </div>
 
             <button
@@ -483,16 +477,11 @@ export default function AddProductPage() {
 
         {/* Form Card */}
         <div className="rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-6 p-6 sm:p-8"
-          >
-
+          <form onSubmit={handleSubmit} className="space-y-6 p-6 sm:p-8">
             {/* Product Name */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Product Name{" "}
-                <span className="text-red-500">*</span>
+                Product Name <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -513,8 +502,7 @@ export default function AddProductPage() {
             {/* Description */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Description{" "}
-                <span className="text-red-500">*</span>
+                Description <span className="text-red-500">*</span>
               </label>
 
               <textarea
@@ -534,7 +522,6 @@ export default function AddProductPage() {
 
             {/* Price / Stock */}
             <div className="grid gap-5 sm:grid-cols-2">
-
               {/* Price */}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -588,7 +575,6 @@ export default function AddProductPage() {
 
             {/* Category Section */}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-
               <div className="mb-5">
                 <h2 className="text-base font-bold text-slate-900">
                   Product Category
@@ -600,12 +586,10 @@ export default function AddProductPage() {
               </div>
 
               <div className="grid gap-5 md:grid-cols-3">
-
                 {/* Main Category */}
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Category{" "}
-                    <span className="text-red-500">*</span>
+                    Category <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
@@ -615,15 +599,10 @@ export default function AddProductPage() {
                       onChange={handleCategoryChange}
                       className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                     >
-                      <option value="">
-                        Select category
-                      </option>
+                      <option value="">Select category</option>
 
                       {categories.map((category) => (
-                        <option
-                          key={category}
-                          value={category}
-                        >
+                        <option key={category} value={category}>
                           {category}
                         </option>
                       ))}
@@ -639,8 +618,7 @@ export default function AddProductPage() {
                 {/* Subcategory */}
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Subcategory{" "}
-                    <span className="text-red-500">*</span>
+                    Subcategory <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
@@ -658,10 +636,7 @@ export default function AddProductPage() {
                       </option>
 
                       {subcategories.map((subcategory) => (
-                        <option
-                          key={subcategory}
-                          value={subcategory}
-                        >
+                        <option key={subcategory} value={subcategory}>
                           {subcategory}
                         </option>
                       ))}
@@ -677,8 +652,7 @@ export default function AddProductPage() {
                 {/* Sub-subcategory */}
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
-                    Product Type{" "}
-                    <span className="text-red-500">*</span>
+                    Product Type <span className="text-red-500">*</span>
                   </label>
 
                   <div className="relative">
@@ -701,10 +675,7 @@ export default function AddProductPage() {
                       </option>
 
                       {subsubcategories.map((item) => (
-                        <option
-                          key={item}
-                          value={item}
-                        >
+                        <option key={item} value={item}>
                           {item}
                         </option>
                       ))}
@@ -729,25 +700,54 @@ export default function AddProductPage() {
 
                     <p className="mt-1 text-sm font-medium text-slate-800">
                       {formData.category}
-                      <span className="mx-2 text-slate-400">
-                        /
-                      </span>
+                      <span className="mx-2 text-slate-400">/</span>
                       {formData.subcategory}
-                      <span className="mx-2 text-slate-400">
-                        /
-                      </span>
+                      <span className="mx-2 text-slate-400">/</span>
                       {formData.subsubcategory}
                     </p>
                   </div>
                 )}
             </div>
 
+            {/* 🆕 Hero Section Toggle */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-start gap-4">
+                <div className="mt-1 flex h-6 items-center">
+                  <input
+                    type="checkbox"
+                    id="isHero"
+                    checked={formData.isHero}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isHero: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="isHero"
+                    className="flex items-center gap-2 text-sm font-semibold text-slate-900"
+                  >
+                    <Sparkles size={18} className="text-amber-500" />
+                    Show on Hero Section
+                    <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      Feature
+                    </span>
+                  </label>
+                  <p className="mt-1 text-sm text-slate-500">
+                    When enabled, this product will be highlighted on the homepage hero slider.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Image Upload */}
             <div>
               <label className="mb-3 block text-sm font-semibold text-slate-700">
-                Product Images{" "}
-                <span className="text-red-500">*</span>
-
+                Product Images <span className="text-red-500">*</span>
                 <span className="ml-2 text-xs font-normal text-slate-500">
                   ({images.length} uploaded)
                 </span>
@@ -769,9 +769,7 @@ export default function AddProductPage() {
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) =>
-                    handleImageUpload(e.target.files)
-                  }
+                  onChange={(e) => handleImageUpload(e.target.files)}
                   className="absolute inset-0 cursor-pointer opacity-0"
                 />
 
@@ -800,10 +798,7 @@ export default function AddProductPage() {
 
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                     {images.map((image, index) => (
-                      <div
-                        key={index}
-                        className="group relative"
-                      >
+                      <div key={index} className="group relative">
                         <img
                           src={image}
                           alt={`Product preview ${index + 1}`}

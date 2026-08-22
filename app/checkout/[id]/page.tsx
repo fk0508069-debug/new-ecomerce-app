@@ -113,7 +113,9 @@ export default function ProductDetailPage() {
         throw new Error(data.error || "Failed to place order");
       }
 
-      router.push(`/order-confirmation?orderId=${data.orderId}`);
+      router.push(
+        `/order-confirmation?orderId=${data.orderId}&tracking_number=${data.tracking_number}`
+      );
     } catch (err: any) {
       console.error("Order submission error:", err);
       alert(err.message || "Failed to place order. Please try again.");

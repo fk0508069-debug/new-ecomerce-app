@@ -10,6 +10,7 @@ export interface IOrderItem {
 
 export interface IOrder extends Document {
   userId?: string;             // for logged-in users
+  tracking_number: string;
   items: IOrderItem[];
   subtotal: number;
   deliveryFee: number;
@@ -38,6 +39,7 @@ const OrderItemSchema = new Schema<IOrderItem>({
 const OrderSchema = new Schema<IOrder>(
   {
     userId: { type: String, default: null },
+    tracking_number: { type: String, required: true, unique: true },
     items: [OrderItemSchema],
     subtotal: { type: Number, required: true },
     deliveryFee: { type: Number, required: true, default: 50 },
