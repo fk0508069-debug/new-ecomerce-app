@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
 export default function ProductDetailPage() {
@@ -124,17 +125,112 @@ export default function ProductDetailPage() {
     }
   };
 
-  // ---------- Render: Loading ----------
+  // ---------- Render: Loading Skeleton ----------
   if (loading) {
     return (
       <>
         <Navbar />
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
-          <div className="text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
-            <p className="mt-4 text-slate-600">Loading product...</p>
+        <main className="min-h-screen bg-slate-50 py-8 animate-pulse">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            {/* Breadcrumb Skeleton */}
+            <div className="mb-6 flex items-center gap-2">
+              <div className="h-4 w-12 rounded bg-slate-200" />
+              <div className="h-4 w-3 rounded bg-slate-200" />
+              <div className="h-4 w-16 rounded bg-slate-200" />
+              <div className="h-4 w-3 rounded bg-slate-200" />
+              <div className="h-4 w-32 rounded bg-slate-200" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+              {/* Left Column Skeleton */}
+              <div className="lg:col-span-2">
+                <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
+                  <div className="grid grid-cols-1 gap-8 p-6 md:grid-cols-2 md:p-8">
+                    {/* Image Skeleton */}
+                    <div className="aspect-square rounded-xl bg-slate-200" />
+
+                    {/* Info Skeleton */}
+                    <div className="flex flex-col">
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                      <div className="mt-3 h-8 w-3/4 rounded bg-slate-200" />
+                      <div className="mt-4 h-9 w-32 rounded bg-slate-200" />
+
+                      {/* Options Skeleton */}
+                      <div className="mt-6 space-y-2">
+                        <div className="h-3.5 w-12 rounded bg-slate-200" />
+                        <div className="flex gap-2">
+                          <div className="h-8 w-16 rounded-full bg-slate-200" />
+                          <div className="h-8 w-16 rounded-full bg-slate-200" />
+                        </div>
+                      </div>
+
+                      {/* Quantity Skeleton */}
+                      <div className="mt-6 flex items-center gap-4">
+                        <div className="h-4 w-16 rounded bg-slate-200" />
+                        <div className="h-9 w-28 rounded-lg bg-slate-200" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description Skeleton */}
+                  <div className="border-t border-slate-200 p-6 md:p-8 space-y-2">
+                    <div className="h-5 w-24 rounded bg-slate-200" />
+                    <div className="h-4 w-full rounded bg-slate-200" />
+                    <div className="h-4 w-4/5 rounded bg-slate-200" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column Skeleton (Checkout Sidebar) */}
+              <div className="lg:col-span-1">
+                <div className="rounded-2xl bg-white p-6 shadow-lg ring-1 ring-slate-200 space-y-4">
+                  <div className="h-6 w-36 rounded bg-slate-200" />
+
+                  {/* Item preview Skeleton */}
+                  <div className="border-t border-slate-200 pt-4 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                      <div className="h-4 w-14 rounded bg-slate-200" />
+                    </div>
+                    <div className="h-3 w-32 rounded bg-slate-200" />
+                  </div>
+
+                  {/* Price breakdown Skeleton */}
+                  <div className="space-y-2 border-t border-slate-200 pt-4">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-16 rounded bg-slate-200" />
+                      <div className="h-4 w-12 rounded bg-slate-200" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-16 rounded bg-slate-200" />
+                      <div className="h-4 w-12 rounded bg-slate-200" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-20 rounded bg-slate-200" />
+                      <div className="h-4 w-12 rounded bg-slate-200" />
+                    </div>
+                    <div className="flex justify-between border-t border-slate-200 pt-2">
+                      <div className="h-5 w-14 rounded bg-slate-200" />
+                      <div className="h-5 w-20 rounded bg-slate-200" />
+                    </div>
+                  </div>
+
+                  {/* Form Skeleton */}
+                  <div className="border-t border-slate-200 pt-4 space-y-3">
+                    <div className="h-5 w-32 rounded bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-9 w-full rounded-lg bg-slate-200" />
+                    <div className="h-10 w-full rounded-full bg-slate-200" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </>
     );
   }
@@ -147,7 +243,7 @@ export default function ProductDetailPage() {
 
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white  rounded-2xl shadow-xl p-8 text-center border border-gray-200 dark:border-gray-700">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-200 dark:border-gray-700">
           <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
             <svg
               className="w-8 h-8 text-blue-600 dark:text-blue-400"
@@ -236,7 +332,7 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 gap-8 p-6 md:grid-cols-2 md:p-8">
                   {/* Image */}
                   <div className="aspect-square overflow-hidden rounded-xl bg-slate-100">
-                    <img
+                    <Image
                       src={
                         Array.isArray(product.images)
                           ? product.images[0]
@@ -244,6 +340,9 @@ export default function ProductDetailPage() {
                             "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80"
                       }
                       alt={product.name}
+                      width={640}
+                      height={640}
+                      unoptimized
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -292,6 +391,7 @@ export default function ProductDetailPage() {
                         <div className="mt-1 flex flex-wrap gap-2">
                           {product.colors.map((color: string) => (
                             <button
+                              type="button"
                               key={color}
                               onClick={() => setSelectedColor(color)}
                               className={`rounded-full border-2 px-4 py-1 text-sm transition ${
@@ -314,6 +414,7 @@ export default function ProductDetailPage() {
                         <div className="mt-1 flex flex-wrap gap-2">
                           {product.sizes.map((size: string) => (
                             <button
+                              type="button"
                               key={size}
                               onClick={() => setSelectedSize(size)}
                               className={`rounded-md border-2 px-4 py-1 text-sm transition ${
@@ -336,6 +437,7 @@ export default function ProductDetailPage() {
                       </label>
                       <div className="flex items-center rounded-lg border border-slate-300">
                         <button
+                          type="button"
                           onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                           className="px-3 py-1 text-slate-600 hover:bg-slate-100"
                           aria-label="Decrease quantity"
@@ -344,6 +446,7 @@ export default function ProductDetailPage() {
                         </button>
                         <span className="w-10 text-center text-sm font-medium">{quantity}</span>
                         <button
+                          type="button"
                           onClick={() => setQuantity((q) => q + 1)}
                           className="px-3 py-1 text-slate-600 hover:bg-slate-100"
                           aria-label="Increase quantity"
@@ -362,8 +465,6 @@ export default function ProductDetailPage() {
                         </span>
                       )}
                     </div>
-
-                 
                   </div>
                 </div>
 

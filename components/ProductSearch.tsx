@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import debounce from "lodash.debounce"; // npm install lodash.debounce @types/lodash.debounce
+import Image from "next/image";
 
 interface Product {
   _id: string;
@@ -167,9 +168,12 @@ export default function ProductSearch() {
                   className="w-full px-4 py-2 text-left hover:bg-amber-50 transition flex items-center gap-3"
                 >
                   {product.images && product.images[0]?.data && (
-                    <img
+                    <Image
                       src={product.images[0].data}
                       alt={product.name}
+                      width={32}
+                      height={32}
+                      unoptimized
                       className="h-8 w-8 rounded object-cover"
                     />
                   )}

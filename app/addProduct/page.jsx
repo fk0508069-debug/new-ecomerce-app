@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { X, Upload, ChevronDown, Sparkles } from "lucide-react";
@@ -799,9 +800,11 @@ export default function AddProductPage() {
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                     {images.map((image, index) => (
                       <div key={index} className="group relative">
-                        <img
+                        <Image
                           src={image}
                           alt={`Product preview ${index + 1}`}
+                          fill
+                          unoptimized
                           className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200"
                         />
 

@@ -1,9 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 
 interface Product {
   _id: string;
@@ -42,7 +44,10 @@ function getProductImage(product: Product): string {
   return fallbackImage;
 }
 
-export default function SearchPage() {
+// ============================================================
+// Client component that uses useSearchParams()
+// ============================================================
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get("q") || "";
@@ -181,9 +186,11 @@ export default function SearchPage() {
                 >
                   {/* Image Frame */}
                   <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-100">
-                    <img
+                    <Image
                       src={getProductImage(product)}
                       alt={product.name}
+                      fill
+                      unoptimized
                       loading="lazy"
                       className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
                     />
@@ -257,5 +264,25 @@ export default function SearchPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// ============================================================
+// Page wrapper with Suspense boundary
+// ============================================================
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-neutral-50/50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+            <p className="mt-3 text-sm font-medium text-neutral-600">Loading search...</p>
+          </div>
+        </div>
+      }
+    >
+      <SearchContent />
+    </Suspense>
   );
 }

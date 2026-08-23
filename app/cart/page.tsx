@@ -3,6 +3,7 @@
 import { useCart } from '../../context/CartContext';
 import Navbar from '../../components/Navbar';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart, totalItems, totalPrice } = useCart();
@@ -28,9 +29,12 @@ export default function CartPage() {
                 <li key={item.id} className="py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {/* Image & Info */}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.name}
+                      width={80}
+                      height={80}
+                      unoptimized
                       className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                     />
                     <div className="min-w-0 flex-1">

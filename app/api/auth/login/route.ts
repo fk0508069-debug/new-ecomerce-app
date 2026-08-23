@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
+const ADMIN_EMAILS = ["fk123456@gmail.com"];
 
 export async function POST(req: Request) {
     
@@ -39,8 +40,13 @@ export async function POST(req: Request) {
       );
     }
 
+    const role =
+      user.role === "admin" || ADMIN_EMAILS.includes(user.email.toLowerCase())
+        ? "admin"
+        : user.role;
+
     const token = jwt.sign(
-      { userId: user._id, email: user.email, name: user.name, role: user.role },
+      { userId: user._id, email: user.email, name: user.name, role },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -52,7 +58,7 @@ export async function POST(req: Request) {
           id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role,   // 👈 now returned
+          role,
         },
       },
       { status: 200 }

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 function OrderConfirmationContent() {
+  const {user} = useAuth()
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const trackingNumber = searchParams.get("tracking_number");
@@ -30,7 +32,7 @@ function OrderConfirmationContent() {
         )}
 
         <Link
-          href="/"
+          href={`/home/${user?.id}`}
           className="mt-6 inline-block rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
         >
           Continue Shopping

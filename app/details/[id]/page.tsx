@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { useCart } from "@/context/CartContext";
-import Recommendations from "@/components/CategoryProducts"; // <-- imported
+import Recommendations from "@/components/CategoryProducts";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -87,29 +88,24 @@ export default function ProductDetailPage() {
 
   // Build category path for recommendations
   const getCategoryPath = (product: any) => {
-    if (product.subsubcategory) {
+    if (product?.subsubcategory) {
       return `${product.category}/${product.subcategory}/${product.subsubcategory}`;
     }
-    if (product.subcategory) {
+    if (product?.subcategory) {
       return `${product.category}/${product.subcategory}`;
     }
-    if (product.category) {
+    if (product?.category) {
       return product.category;
     }
     return null;
   };
 
-  // Loading state
+  // Render Skeleton while loading
   if (loading) {
     return (
       <>
         <Navbar />
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
-          <div className="text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
-            <p className="mt-4 text-slate-600">Loading product...</p>
-          </div>
-        </div>
+        <ProductDetailSkeleton />
       </>
     );
   }
@@ -119,13 +115,13 @@ export default function ProductDetailPage() {
     return (
       <>
         <Navbar />
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-          <div className="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+        <div className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-slate-50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
             <h2 className="text-2xl font-bold text-red-600">Oops!</h2>
             <p className="mt-2 text-slate-600">{error || "Product not found"}</p>
             <Link
               href="/"
-              className="mt-4 inline-block rounded-full bg-amber-500 px-6 py-2 text-white transition hover:bg-amber-600"
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-600"
             >
               Back to Products
             </Link>
@@ -143,41 +139,45 @@ export default function ProductDetailPage() {
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-slate-50 py-8">
+      <main className="min-h-screen bg-slate-50 py-6 sm:py-8 md:py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
-          <nav className="mb-6 text-sm text-slate-500">
+          <nav className="mb-4 sm:mb-6 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-slate-500">
             <Link href="/" className="transition hover:text-amber-500">
               Home
             </Link>
-            <span className="mx-2">/</span>
+            <span>/</span>
             <Link href="/" className="transition hover:text-amber-500">
               Products
             </Link>
             {product.category && (
               <>
-                <span className="mx-2">/</span>
+                <span>/</span>
                 <span className="text-slate-600">{product.category}</span>
               </>
             )}
-            <span className="mx-2">/</span>
-            <span className="text-slate-700">{product.name}</span>
+            <span>/</span>
+            <span className="truncate max-w-[150px] sm:max-w-xs text-slate-800 font-medium">
+              {product.name}
+            </span>
           </nav>
 
           {/* Main Product Card */}
-          <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
-            <div className="grid grid-cols-1 gap-8 p-6 md:grid-cols-2 md:p-8 lg:gap-12">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
+            <div className="grid grid-cols-1 gap-6 p-4 sm:p-6 md:grid-cols-2 md:p-8 lg:gap-12">
               {/* Image Gallery */}
               <div>
-                <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                <div className="relative aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                   {currentImage ? (
-                    <img
+                    <Image
                       src={currentImage}
                       alt={product.name}
-                      className="h-full w-full object-cover"
+                      fill
+                      unoptimized
+                      className="h-full w-full object-cover transition-transform duration-300"
                     />
                   ) : (
-                    <div className="text-center text-slate-400">
+                    <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
                       <div className="text-5xl">📦</div>
                       <p className="mt-3 text-sm">No image available</p>
                     </div>
@@ -185,22 +185,24 @@ export default function ProductDetailPage() {
                 </div>
 
                 {images.length > 1 && (
-                  <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+                  <div className="mt-4 flex gap-2.5 sm:gap-3 overflow-x-auto pb-2">
                     {images.map((image: string, index: number) => (
                       <button
                         type="button"
                         key={index}
                         onClick={() => setSelectedImageIndex(index)}
-                        className={`shrink-0 overflow-hidden rounded-lg ring-2 transition ${
+                        className={`relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-lg ring-2 transition ${
                           selectedImageIndex === index
                             ? "ring-amber-500"
                             : "ring-slate-200 hover:ring-slate-300"
                         }`}
                       >
-                        <img
+                        <Image
                           src={image}
                           alt={`Thumbnail ${index + 1}`}
-                          className="h-16 w-16 object-cover"
+                          fill
+                          unoptimized
+                          className="h-full w-full object-cover"
                         />
                       </button>
                     ))}
@@ -209,180 +211,186 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Product Info */}
-              <div className="flex flex-col">
-                {product.brand && (
-                  <div className="text-sm font-medium text-slate-500">
-                    Brand: <span className="text-slate-700">{product.brand}</span>
-                  </div>
-                )}
+              <div className="flex flex-col justify-between">
+                <div>
+                  {product.brand && (
+                    <div className="text-xs sm:text-sm font-medium text-slate-500">
+                      Brand: <span className="text-slate-700 font-semibold">{product.brand}</span>
+                    </div>
+                  )}
 
-                <h1 className="mt-2 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
-                  {product.name}
-                </h1>
+                  <h1 className="mt-1 text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                    {product.name}
+                  </h1>
 
-                {/* Category hierarchy pills */}
-                {(product.category || product.subcategory || product.subsubcategory) && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                    {product.category && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                        {product.category}
-                      </span>
-                    )}
-                    {product.subcategory && (
-                      <>
-                        <span className="text-slate-300">/</span>
+                  {/* Category hierarchy pills */}
+                  {(product.category || product.subcategory || product.subsubcategory) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      {product.category && (
                         <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                          {product.subcategory}
+                          {product.category}
                         </span>
-                      </>
-                    )}
-                    {product.subsubcategory && (
-                      <>
-                        <span className="text-slate-300">/</span>
-                        <span className="rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-700 ring-1 ring-amber-200">
-                          {product.subsubcategory}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Description under name */}
-                {product.description && (
-                  <div className="mt-5">
-                    <p className="text-sm leading-6 text-slate-600">
-                      {product.description}
-                    </p>
-                  </div>
-                )}
-
-                {product.rating && (
-                  <div className="mt-4">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2.5 py-1 text-sm font-medium text-amber-700">
-                      ⭐ {product.rating}
-                      <span className="text-amber-600">
-                        ({product.reviews || 0} reviews)
-                      </span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Price */}
-                <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-5">
-                  <span className="text-3xl font-bold text-amber-600">
-                    Rs. {Number(product.price || 0).toFixed(2)}
-                  </span>
-                  {product.originalPrice && (
-                    <span className="text-lg text-slate-400 line-through">
-                      Rs. {Number(product.originalPrice).toFixed(2)}
-                    </span>
+                      )}
+                      {product.subcategory && (
+                        <>
+                          <span className="text-slate-300">/</span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                            {product.subcategory}
+                          </span>
+                        </>
+                      )}
+                      {product.subsubcategory && (
+                        <>
+                          <span className="text-slate-300">/</span>
+                          <span className="rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-700 ring-1 ring-amber-200">
+                            {product.subsubcategory}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   )}
-                  {product.discount && (
-                    <span className="rounded bg-green-100 px-2 py-0.5 text-sm font-semibold text-green-700">
-                      -{product.discount}%
-                    </span>
-                  )}
-                </div>
 
-                {/* Stock */}
-                {product.stock !== undefined && (
-                  <div className="mt-3">
-                    {Number(product.stock) > 0 ? (
-                      <p className="text-sm font-medium text-green-600">
-                        ✓ In Stock{" "}
-                        <span className="font-normal text-slate-500">
-                          ({product.stock} available)
-                        </span>
+                  {/* Description under name */}
+                  {product.description && (
+                    <div className="mt-4">
+                      <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
+                        {product.description}
                       </p>
-                    ) : (
-                      <p className="text-sm font-semibold text-red-600">Out of Stock</p>
+                    </div>
+                  )}
+
+                  {product.rating && (
+                    <div className="mt-3.5">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/70 px-2.5 py-1 text-xs sm:text-sm font-medium text-amber-800">
+                        ⭐ {product.rating}
+                        <span className="text-amber-700/80">
+                          ({product.reviews || 0} reviews)
+                        </span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Price */}
+                  <div className="mt-5 flex flex-wrap items-baseline gap-2.5 border-t border-slate-100 pt-5">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-amber-600">
+                      Rs. {Number(product.price || 0).toFixed(2)}
+                    </span>
+                    {product.originalPrice && (
+                      <span className="text-base sm:text-lg text-slate-400 line-through">
+                        Rs. {Number(product.originalPrice).toFixed(2)}
+                      </span>
+                    )}
+                    {product.discount && (
+                      <span className="rounded-md bg-green-100 px-2 py-0.5 text-xs sm:text-sm font-bold text-green-700">
+                        -{product.discount}%
+                      </span>
                     )}
                   </div>
-                )}
 
-                {/* Color */}
-                {product.colors && product.colors.length > 0 && (
-                  <div className="mt-5">
-                    <p className="text-sm font-medium text-slate-700">Color:</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {product.colors.map((color: string) => (
-                        <button
-                          type="button"
-                          key={color}
-                          onClick={() => setSelectedColor(color)}
-                          className={`rounded-full border-2 px-4 py-1 text-sm transition ${
-                            selectedColor === color
-                              ? "border-amber-500 bg-amber-50 text-amber-700"
-                              : "border-slate-300 text-slate-700 hover:border-slate-400"
-                          }`}
-                        >
-                          {color}
-                        </button>
-                      ))}
+                  {/* Stock */}
+                  {product.stock !== undefined && (
+                    <div className="mt-2.5">
+                      {Number(product.stock) > 0 ? (
+                        <p className="text-xs sm:text-sm font-medium text-green-600">
+                          ✓ In Stock{" "}
+                          <span className="font-normal text-slate-500">
+                            ({product.stock} available)
+                          </span>
+                        </p>
+                      ) : (
+                        <p className="text-xs sm:text-sm font-semibold text-red-600">
+                          Out of Stock
+                        </p>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Size */}
-                {product.sizes && product.sizes.length > 0 && (
-                  <div className="mt-5">
-                    <p className="text-sm font-medium text-slate-700">Size:</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {product.sizes.map((size: string) => (
-                        <button
-                          type="button"
-                          key={size}
-                          onClick={() => setSelectedSize(size)}
-                          className={`rounded-md border-2 px-4 py-1 text-sm transition ${
-                            selectedSize === size
-                              ? "border-amber-500 bg-amber-50 text-amber-700"
-                              : "border-slate-300 text-slate-700 hover:border-slate-400"
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                  {/* Color */}
+                  {product.colors && product.colors.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-xs sm:text-sm font-medium text-slate-700">Color:</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {product.colors.map((color: string) => (
+                          <button
+                            type="button"
+                            key={color}
+                            onClick={() => setSelectedColor(color)}
+                            className={`rounded-full border px-3.5 py-1 text-xs sm:text-sm transition ${
+                              selectedColor === color
+                                ? "border-amber-500 bg-amber-50 font-semibold text-amber-700 shadow-sm"
+                                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                            }`}
+                          >
+                            {color}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Quantity */}
-                <div className="mt-6 flex items-center gap-4">
-                  <label htmlFor="quantity" className="text-sm font-medium text-slate-700">
-                    Quantity
-                  </label>
-                  <div className="flex items-center overflow-hidden rounded-lg border border-slate-300">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="px-3 py-2 text-slate-600 transition hover:bg-slate-100"
-                      aria-label="Decrease quantity"
-                    >
-                      −
-                    </button>
-                    <span className="w-10 text-center text-sm font-medium">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuantity((q) =>
-                          product.stock ? Math.min(product.stock, q + 1) : q + 1
-                        )
-                      }
-                      className="px-3 py-2 text-slate-600 transition hover:bg-slate-100"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
+                  {/* Size */}
+                  {product.sizes && product.sizes.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs sm:text-sm font-medium text-slate-700">Size:</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {product.sizes.map((size: string) => (
+                          <button
+                            type="button"
+                            key={size}
+                            onClick={() => setSelectedSize(size)}
+                            className={`rounded-lg border px-3.5 py-1 text-xs sm:text-sm transition ${
+                              selectedSize === size
+                                ? "border-amber-500 bg-amber-50 font-semibold text-amber-700 shadow-sm"
+                                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quantity */}
+                  <div className="mt-5 flex items-center gap-3">
+                    <label htmlFor="quantity" className="text-xs sm:text-sm font-medium text-slate-700">
+                      Quantity:
+                    </label>
+                    <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="px-3 py-1.5 text-slate-600 transition hover:bg-slate-200 active:scale-95"
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <span className="w-10 text-center text-sm font-bold text-slate-800">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantity((q) =>
+                            product.stock ? Math.min(product.stock, q + 1) : q + 1
+                          )
+                        }
+                        className="px-3 py-1.5 text-slate-600 transition hover:bg-slate-200 active:scale-95"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:gap-3">
                   <button
                     type="button"
                     onClick={handleAddToCart}
                     disabled={product.stock !== undefined && Number(product.stock) <= 0}
-                    className="flex-1 rounded-full bg-amber-500 py-3 font-semibold text-white transition hover:bg-amber-600 focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="flex-1 rounded-full bg-amber-500 py-3 text-xs sm:text-sm md:text-base font-semibold text-white shadow-sm transition hover:bg-amber-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     {product.stock !== undefined && Number(product.stock) <= 0
                       ? "Out of Stock"
@@ -390,7 +398,7 @@ export default function ProductDetailPage() {
                   </button>
                   <Link
                     href={`/checkout/${product._id || product.id}`}
-                    className={`flex-1 rounded-full border-2 border-amber-500 py-3 text-center font-semibold text-amber-600 transition hover:bg-amber-50 ${
+                    className={`flex-1 rounded-full border-2 border-amber-500 py-3 text-center text-xs sm:text-sm md:text-base font-semibold text-amber-600 transition hover:bg-amber-50 active:scale-[0.98] ${
                       product.stock !== undefined && Number(product.stock) <= 0
                         ? "pointer-events-none border-slate-300 text-slate-400"
                         : ""
@@ -403,26 +411,26 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Extended Information */}
-            <div className="border-t border-slate-200 p-6 md:p-8">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="border-t border-slate-200/80 bg-slate-50/50 p-4 sm:p-6 md:p-8">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <h3 className="font-semibold text-slate-800">Delivery Options</h3>
-                  <div className="mt-2 space-y-2 text-sm text-slate-600">
-                    <p className="text-green-600">✓ Cash on Delivery available</p>
-                    <p>Fast and secure delivery</p>
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Delivery Options</h3>
+                  <div className="mt-2 space-y-1.5 text-xs sm:text-sm text-slate-600">
+                    <p className="text-green-600 font-medium">✓ Cash on Delivery available</p>
+                    <p>Fast and secure standard delivery</p>
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-800">Return & Warranty</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-slate-600">
-                    <li>• 14 days easy return</li>
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Return & Warranty</h3>
+                  <ul className="mt-2 space-y-1.5 text-xs sm:text-sm text-slate-600">
+                    <li>• 14 days easy return policy</li>
                     <li>• Change of mind accepted</li>
-                    <li className="text-amber-600">• Warranty not available</li>
+                    <li className="text-amber-600 font-medium">• Warranty not available</li>
                   </ul>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-800">Product Details</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Product Details</h3>
+                  <ul className="mt-2 space-y-1.5 text-xs sm:text-sm text-slate-600">
                     {product.category && <li>• Category: {product.category}</li>}
                     {product.subcategory && <li>• Subcategory: {product.subcategory}</li>}
                     {product.subsubcategory && <li>• Product Type: {product.subsubcategory}</li>}
@@ -441,13 +449,13 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* ============================================================ */}
-          {/* RECOMMENDATIONS SECTION */}
-          {/* ============================================================ */}
+          {/* Recommendations Section */}
           {categoryPath && (
-            <section className="mt-12">
-              <h2 className="text-2xl font-bold text-slate-800">You May Also Like</h2>
-              <div className="mt-4">
+            <section className="mt-10 sm:mt-14">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                You May Also Like
+              </h2>
+              <div className="mt-4 sm:mt-6">
                 <Recommendations
                   category={categoryPath}
                   excludeId={String(product._id || product.id)}
@@ -459,5 +467,118 @@ export default function ProductDetailPage() {
         </div>
       </main>
     </>
+  );
+}
+
+// Dedicated Skeleton Component for Product Detail Page
+export function ProductDetailSkeleton() {
+  return (
+    <main className="min-h-screen bg-slate-50 py-6 sm:py-8 md:py-10 animate-pulse">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb Skeleton */}
+        <div className="mb-4 sm:mb-6 flex gap-2">
+          <div className="h-4 w-16 rounded bg-slate-200" />
+          <div className="h-4 w-4 rounded bg-slate-200" />
+          <div className="h-4 w-20 rounded bg-slate-200" />
+          <div className="h-4 w-4 rounded bg-slate-200" />
+          <div className="h-4 w-32 rounded bg-slate-200" />
+        </div>
+
+        {/* Main Card Skeleton */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
+          <div className="grid grid-cols-1 gap-6 p-4 sm:p-6 md:grid-cols-2 md:p-8 lg:gap-12">
+            {/* Gallery Skeleton */}
+            <div>
+              <div className="aspect-square w-full rounded-xl bg-slate-200" />
+              <div className="mt-4 flex gap-2.5 sm:gap-3">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-slate-200" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-slate-200" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-slate-200" />
+              </div>
+            </div>
+
+            {/* Info Skeleton */}
+            <div className="flex flex-col justify-between space-y-6">
+              <div className="space-y-3.5">
+                <div className="h-3.5 w-24 rounded bg-slate-200" />
+                <div className="h-8 w-3/4 rounded bg-slate-200" />
+
+                {/* Pills Skeleton */}
+                <div className="flex gap-2 pt-1">
+                  <div className="h-6 w-20 rounded-full bg-slate-200" />
+                  <div className="h-6 w-24 rounded-full bg-slate-200" />
+                </div>
+
+                {/* Description lines */}
+                <div className="space-y-2 pt-2">
+                  <div className="h-3.5 w-full rounded bg-slate-200" />
+                  <div className="h-3.5 w-5/6 rounded bg-slate-200" />
+                </div>
+
+                {/* Price block Skeleton */}
+                <div className="pt-4 border-t border-slate-100 space-y-2">
+                  <div className="h-8 w-36 rounded bg-slate-200" />
+                  <div className="h-4 w-28 rounded bg-slate-200" />
+                </div>
+
+                {/* Variant Options Skeleton */}
+                <div className="space-y-2 pt-2">
+                  <div className="h-3 w-16 rounded bg-slate-200" />
+                  <div className="flex gap-2">
+                    <div className="h-8 w-16 rounded-full bg-slate-200" />
+                    <div className="h-8 w-16 rounded-full bg-slate-200" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Skeleton */}
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
+                <div className="h-11 sm:h-12 flex-1 rounded-full bg-slate-200" />
+                <div className="h-11 sm:h-12 flex-1 rounded-full bg-slate-200" />
+              </div>
+            </div>
+          </div>
+
+          {/* Extended Info Skeleton */}
+          <div className="border-t border-slate-200/80 bg-slate-50/50 p-4 sm:p-6 md:p-8">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <div className="h-4 w-32 rounded bg-slate-200" />
+                <div className="h-3 w-44 rounded bg-slate-200" />
+                <div className="h-3 w-36 rounded bg-slate-200" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-36 rounded bg-slate-200" />
+                <div className="h-3 w-40 rounded bg-slate-200" />
+                <div className="h-3 w-32 rounded bg-slate-200" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-28 rounded bg-slate-200" />
+                <div className="h-3 w-36 rounded bg-slate-200" />
+                <div className="h-3 w-32 rounded bg-slate-200" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recommendations Section Skeleton */}
+        <div className="mt-10 sm:mt-14 space-y-4">
+          <div className="h-6 w-48 rounded bg-slate-200" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-3 space-y-2"
+              >
+                <div className="aspect-square w-full rounded bg-slate-200" />
+                <div className="h-3 w-1/3 rounded bg-slate-200" />
+                <div className="h-4 w-3/4 rounded bg-slate-200" />
+                <div className="h-4 w-1/2 rounded bg-slate-200" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

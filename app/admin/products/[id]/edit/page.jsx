@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
 export default function EditProductPage() {
@@ -85,6 +86,32 @@ export default function EditProductPage() {
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this product? This action cannot be undone.")) {
+      return;
+    }
+
+    setError("");
+    setSaving(true);
+
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete product");
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError(err.message || "Failed to delete product");
       setSaving(false);
     }
   };
@@ -188,10 +215,13 @@ export default function EditProductPage() {
             <label className="mb-2 block text-sm font-medium text-slate-700">Images</label>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {images.map((image, index) => (
-                <img
+                <Image
                   key={`${image}-${index}`}
                   src={image}
                   alt={`Product preview ${index + 1}`}
+                  width={240}
+                  height={96}
+                  unoptimized
                   className="h-24 w-full rounded-xl object-cover shadow-sm ring-1 ring-slate-200"
                 />
               ))}
@@ -206,6 +236,21 @@ export default function EditProductPage() {
             {saving ? "Updating product..." : "Update Product"}
           </button>
         </form>
+
+        <section className="mt-8 border-t border-red-100 pt-6">
+          <h2 className="text-lg font-semibold text-slate-800">Danger zone</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Permanently remove this product from the catalog.
+          </p>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving}
+            className="mt-4 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {saving ? "Deleting product..." : "Delete Product"}
+          </button>
+        </section>
       </div>
     </main>
   );
