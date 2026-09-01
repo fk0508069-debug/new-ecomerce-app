@@ -27,6 +27,80 @@ function generateSessionId(): string {
 }
 
 // ============================================================
+// URL PARSING & LINK RENDERING
+// ============================================================
+function parseAndRenderText(text: string): React.ReactNode {
+  // URL regex pattern that matches http, https, and localhost URLs
+  const urlPattern = /(\b(https?:\/\/|http:\/\/|www\.)[^\s<]+)/gi;
+  
+  // Check if text contains any URLs
+  if (!urlPattern.test(text)) {
+    return text;
+  }
+  
+  // Reset regex lastIndex
+  urlPattern.lastIndex = 0;
+  
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = urlPattern.exec(text)) !== null) {
+    const url = match[0];
+    const start = match.index;
+    const end = start + url.length;
+
+    // Add text before the URL
+    if (start > lastIndex) {
+      parts.push(text.substring(lastIndex, start));
+    }
+
+    // Add the URL as a clickable link
+    // Clean the URL (remove trailing punctuation)
+    let cleanUrl = url;
+    const trailingPunctuation = /[.,;:!?)]$/;
+    let trailingChar = "";
+    if (trailingPunctuation.test(cleanUrl)) {
+      trailingChar = cleanUrl.slice(-1);
+      cleanUrl = cleanUrl.slice(0, -1);
+    }
+
+    // Ensure URL has protocol
+    let href = cleanUrl;
+    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+      href = "https://" + cleanUrl;
+    }
+
+    parts.push(
+      <a
+        key={`link-${start}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline hover:text-blue-800 hover:underline font-medium break-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {cleanUrl}
+      </a>
+    );
+
+    // Add trailing punctuation if it was removed
+    if (trailingChar) {
+      parts.push(trailingChar);
+    }
+
+    lastIndex = end;
+  }
+
+  // Add remaining text after the last URL
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+}
+
+// ============================================================
 // CHATBOT
 // ============================================================
 const ChatBot: React.FC = () => {
@@ -113,14 +187,16 @@ const ChatBot: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionId,
-          question: question,
-        }),
-      });
+    const response = await fetch("http://192.168.1.4:8000/ask", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    session_id: sessionId,
+    question: question,
+  }),
+});
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -145,6 +221,20 @@ const ChatBot: React.FC = () => {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  // ============================================================
+  // RENDER MESSAGE WITH LINKS
+  // ============================================================
+  const renderMessageContent = (text: string) => {
+    // Split by newlines and render each line
+    const lines = text.split('\n');
+    return lines.map((line, lineIndex) => (
+      <React.Fragment key={lineIndex}>
+        {lineIndex > 0 && <br />}
+        {parseAndRenderText(line)}
+      </React.Fragment>
+    ));
   };
 
   return (
@@ -208,13 +298,16 @@ const ChatBot: React.FC = () => {
                 }`}
               >
                 <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                  className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
                     message.sender === "user"
                       ? "rounded-br-none bg-blue-600 font-normal text-white"
                       : "rounded-bl-none border border-slate-200/80 bg-white text-slate-800"
                   }`}
                 >
-                  {message.text}
+                  {message.sender === "user" 
+                    ? message.text 
+                    : renderMessageContent(message.text)
+                  }
                 </div>
               </div>
             ))}
