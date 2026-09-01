@@ -12,7 +12,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const productId = params?.id;
   const { user } = useAuth();
-  
+
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const [product, setProduct] = useState<any>(null);
@@ -228,6 +228,7 @@ export default function ProductDetailPage() {
                     <div className="h-9 w-full rounded-lg bg-slate-200" />
                     <div className="h-10 w-full rounded-full bg-slate-200" />
                   </div>
+                  <p>hey</p>
                 </div>
               </div>
             </div>
