@@ -42,15 +42,25 @@ export default function LoginPage() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-gray-300 p-2.5 outline-none focus:border-blue-500"
-          />
-        </div>
+  <label className="block text-sm font-medium text-gray-700">Email</label>
+  <div className="relative mt-1 flex items-center rounded-lg border border-gray-300 bg-white focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+    <input
+      type="text"
+      required
+      placeholder="username"
+      value={formData.email.replace(/@gmail\.com$/, "")}
+      onChange={(e) => {
+        // Strip any entered @gmail.com or spaces to prevent duplication
+        const username = e.target.value.replace(/@gmail\.com|\s/g, "");
+        setFormData({ ...formData, email: username ? `${username}@gmail.com` : "" });
+      }}
+      className="w-full rounded-l-lg p-2.5 pr-1 text-slate-800 outline-none"
+    />
+    <span className="select-none pr-3 text-sm font-medium text-gray-400">
+      @gmail.com
+    </span>
+  </div>
+</div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Password</label>

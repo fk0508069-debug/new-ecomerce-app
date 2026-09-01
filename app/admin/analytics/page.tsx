@@ -1,6 +1,8 @@
 "use client";
 import ChatBot from "@/components/chatBot";
 import Orders from "@/components/order";
+import user from "@/models/User";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
@@ -16,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { id } from "zod/v4/locales";
 
 type Order = {
   _id: string;
@@ -28,6 +31,10 @@ type Order = {
     quantity: number;
   }[];
 };
+
+type user = {
+  _id: string
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
@@ -53,6 +60,7 @@ const formatDate = (date: string) =>
 
 export default function AnalyticsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [user] = useState('')
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState("30");
@@ -372,6 +380,7 @@ export default function AnalyticsPage() {
 
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
+            <Link href={`/home/${user?.id}`}>home</Link>
             <p className="mb-1 text-sm font-medium text-amber-600">
               Store Analytics
             </p>
@@ -820,6 +829,7 @@ function MetricCard({
   };
 
   return (
+  
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-start justify-between">
         <div>
@@ -834,7 +844,7 @@ function MetricCard({
 
         <div
           className={`rounded-xl px-3 py-2 text-xs font-semibold ${accentStyles[accent]}`}
-        >
+          >
           KPI
         </div>
       </div>
@@ -860,6 +870,7 @@ function SmallMetric({
       <p className="text-xs font-medium text-slate-500">
         {label}
       </p>
+     
 <ChatBot />
 
       <p className={`mt-2 text-2xl font-bold ${color}`}>

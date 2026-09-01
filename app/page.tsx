@@ -66,7 +66,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-slate-950">
+      <main className="min-h-screen ">
         {/* Hero – has its own skeleton now */}
         <HeroSection />
 

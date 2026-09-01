@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/lodash.debounce": "^4.0.9",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",

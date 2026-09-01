@@ -12,6 +12,8 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const productId = params?.id;
   const { user } = useAuth();
+  
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -469,12 +471,28 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Description (optional) */}
-                {product.description && (
-                  <div className="border-t border-slate-200 p-6 md:p-8">
-                    <h3 className="font-semibold text-slate-700">Description</h3>
-                    <p className="mt-2 text-slate-600">{product.description}</p>
-                  </div>
-                )}
+                       {product.description && (
+  <div className="mt-4">
+    <p
+      className={`text-xs sm:text-sm leading-relaxed text-slate-600 ${
+        isDescriptionExpanded ? "" : "line-clamp-3"
+      }`}
+    >
+      {product.description}
+    </p>
+
+    {/* Only show the toggle button if the description is long enough */}
+    {product.description.length > 120 && (
+      <button
+        type="button"
+        onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+        className="mt-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline"
+      >
+        {isDescriptionExpanded ? "See less" : "See more"}
+      </button>
+    )}
+  </div>
+)}
               </div>
             </div>
 

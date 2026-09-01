@@ -1,10 +1,6 @@
 "use client";
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface Message {
   id: string;
@@ -12,24 +8,22 @@ interface Message {
   sender: "user" | "bot";
 }
 
+interface QuickQuestion {
+  icon: string;
+  text: string;
+}
+
 // ============================================================
 // SESSION ID GENERATOR
 // ============================================================
 function generateSessionId(): string {
-  // Modern browsers
   if (
     typeof crypto !== "undefined" &&
     typeof crypto.randomUUID === "function"
   ) {
     return crypto.randomUUID();
   }
-
-  // Fallback for older/incompatible browsers
-  return `${Date.now()}-${Math.random()
-    .toString(36)
-    .substring(2, 15)}-${Math.random()
-    .toString(36)
-    .substring(2, 15)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
 // ============================================================
@@ -41,7 +35,7 @@ const ChatBot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "init",
-      text: "Hello! 👋 I'm your AI assistant. How can I help you?",
+      text: "Hello! 👋 I'm your AI assistant. How can I help you today?",
       sender: "bot",
     },
   ]);
@@ -49,25 +43,22 @@ const ChatBot: React.FC = () => {
   const [input, setInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Styled predefined questions with semantic icons
+  const quickQuestions: QuickQuestion[] = [
+    { icon: "📦", text: "Track my order" },
+    { icon: "✨", text: "Suggest a product" },
+    { icon: "💬", text: "Help with returns" },
+  ];
+
   // ============================================================
   // SESSION ID
   // ============================================================
   const [sessionId] = useState<string>(() => {
-    // This code runs in browser only
-    if (typeof window === "undefined") {
-      return "";
-    }
-
+    if (typeof window === "undefined") return "";
     const stored = localStorage.getItem("rag_session_id");
-
-    if (stored) {
-      return stored;
-    }
-
+    if (stored) return stored;
     const newId = generateSessionId();
-
     localStorage.setItem("rag_session_id", newId);
-
     return newId;
   });
 
@@ -91,7 +82,6 @@ const ChatBot: React.FC = () => {
     } else {
       document.body.style.overflow = "";
     }
-
     return () => {
       document.body.style.overflow = "";
     };
@@ -100,10 +90,7 @@ const ChatBot: React.FC = () => {
   // ============================================================
   // ADD MESSAGE
   // ============================================================
-  const addMessage = (
-    text: string,
-    sender: "user" | "bot"
-  ) => {
+  const addMessage = (text: string, sender: "user" | "bot") => {
     setMessages((prev) => [
       ...prev,
       {
@@ -117,74 +104,33 @@ const ChatBot: React.FC = () => {
   // ============================================================
   // SEND MESSAGE
   // ============================================================
-  const sendMessage = async () => {
-    const question = input.trim();
+  const sendMessage = async (questionOverride?: string) => {
+    const question = (questionOverride ?? input).trim();
+    if (!question || isLoading) return;
 
-    if (!question || isLoading) {
-      return;
-    }
-
-    // Add user's message immediately
     addMessage(question, "user");
-
-    // Clear input
     setInput("");
-
-    // Show loading state
     setIsLoading(true);
 
     try {
-      // IMPORTANT:
-      // Do NOT use 127.0.0.1 here when accessing the website
-      // from another device.
-      //
-      // Your PC IP = 192.168.1.8
-      // FastAPI = port 8000
-      //
-      const response = await fetch(
-        "http://192.168.1.8:8000/ask",
-        {
-          method: "POST",
+      const response = await fetch("http://127.0.0.1:8000/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question: question,
+        }),
+      });
 
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            session_id: sessionId,
-            question: question,
-          }),
-        }
-      );
-
-      // ========================================================
-      // HANDLE HTTP ERROR
-      // ========================================================
       if (!response.ok) {
         const errorText = await response.text();
-
-        throw new Error(
-          `API returned ${response.status}: ${errorText}`
-        );
+        throw new Error(`API returned ${response.status}: ${errorText}`);
       }
 
-      // ========================================================
-      // PARSE RESPONSE
-      // ========================================================
       const data = await response.json();
-
-      console.log("RAG response:", data);
-
-      // ========================================================
-      // ADD BOT RESPONSE
-      // ========================================================
-      addMessage(
-        data.answer || "The AI returned no answer.",
-        "bot"
-      );
+      addMessage(data.answer || "The AI returned no answer.", "bot");
     } catch (error) {
       console.error("RAG API error:", error);
-
       addMessage(
         "❌ Could not connect to the AI server. Please try again.",
         "bot"
@@ -194,153 +140,145 @@ const ChatBot: React.FC = () => {
     }
   };
 
-  // ============================================================
-  // KEYDOWN
-  // ============================================================
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  // ============================================================
-  // CLOSE CHAT
-  // ============================================================
-  const closeChat = () => {
-    setIsOpen(false);
-  };
-
-  // ============================================================
-  // OPEN CHAT
-  // ============================================================
-  const openChat = () => {
-    setIsOpen(true);
-  };
-
-  // ============================================================
-  // UI
-  // ============================================================
   return (
     <>
-      {/* ======================================================
-          CHAT BUTTON
-      ====================================================== */}
+      {/* FLOATING TOGGLE BUTTON */}
       {!isOpen && (
         <button
-          onClick={openChat}
+          onClick={() => setIsOpen(true)}
           type="button"
-          className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-2xl text-white shadow-lg transition hover:scale-105 hover:bg-blue-700"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-2xl text-white shadow-xl transition-all duration-200 hover:scale-105 hover:bg-blue-700 active:scale-95"
           aria-label="Open AI assistant"
         >
           💬
         </button>
       )}
 
-      {/* ======================================================
-          CHAT WINDOW
-      ====================================================== */}
+      {/* BACKDROP OVERLAY */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 flex h-[600px] w-[380px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-          
-          {/* ==================================================
-              HEADER
-          ================================================== */}
-          <div className="flex items-center justify-between bg-blue-600 px-5 py-4 text-white">
-            <div>
-              <h2 className="font-semibold">
-                AI Assistant
-              </h2>
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-              <p className="text-xs text-blue-100">
-                Online
-              </p>
+      {/* SLIDEABLE DRAWER */}
+      <div
+        className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-[420px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* HEADER */}
+        <div className="flex items-center justify-between border-b border-blue-700/20 bg-blue-600 px-5 py-4 text-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-lg font-bold backdrop-blur-md">
+              🤖
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-blue-600 bg-emerald-400" />
             </div>
-
-            <button
-              onClick={closeChat}
-              type="button"
-              className="text-xl text-white hover:text-gray-200"
-              aria-label="Close chat"
-            >
-              ✕
-            </button>
+            <div>
+              <h2 className="text-sm font-semibold leading-tight">AI Assistant</h2>
+              <p className="text-[11px] text-blue-100">Always here to help</p>
+            </div>
           </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close chat"
+          >
+            ✕
+          </button>
+        </div>
 
-          {/* ==================================================
-              MESSAGES
-          ================================================== */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
-            <div className="space-y-3">
-              {messages.map((message) => (
+        {/* MESSAGES */}
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-4">
+          <div className="space-y-3.5">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
-                  key={message.id}
-                  className={`flex ${
+                  className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
                     message.sender === "user"
-                      ? "justify-end"
-                      : "justify-start"
+                      ? "rounded-br-none bg-blue-600 font-normal text-white"
+                      : "rounded-bl-none border border-slate-200/80 bg-white text-slate-800"
                   }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-                      message.sender === "user"
-                        ? "rounded-br-md bg-blue-600 text-white"
-                        : "rounded-bl-md bg-white text-gray-800 shadow"
-                    }`}
-                  >
-                    {message.text}
-                  </div>
+                  {message.text}
                 </div>
-              ))}
+              </div>
+            ))}
 
-              {/* ==================================================
-                  LOADING
-              ================================================== */}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-gray-600 shadow">
-                    AI is thinking...
-                  </div>
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-none border border-slate-200/80 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
                 </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* ==================================================
-              INPUT
-          ================================================== */}
-          <div className="border-t bg-white p-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) =>
-                  setInput(e.target.value)
-                }
-                onKeyDown={handleKeyDown}
-                placeholder="Ask something..."
-                disabled={isLoading}
-                className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500"
-              />
-
-              <button
-                onClick={sendMessage}
-                type="button"
-                disabled={
-                  isLoading || !input.trim()
-                }
-                className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Send
-              </button>
-            </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
-      )}
+
+        {/* REDESIGNED QUICK SUGGESTIONS */}
+        <div className="border-t border-slate-100 bg-white px-4 pt-3 pb-2">
+          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+            <span>⚡ Frequently Asked</span>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {quickQuestions.map((q) => (
+              <button
+                key={q.text}
+                onClick={() => sendMessage(q.text)}
+                disabled={isLoading}
+                className="group flex flex-shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-all duration-150 hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50"
+              >
+                <span className="text-xs transition-transform group-hover:scale-110">
+                  {q.icon}
+                </span>
+                <span>{q.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* INPUT */}
+        <div className="border-t border-slate-200/80 bg-white p-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything..."
+              disabled={isLoading}
+              className="flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              onClick={() => sendMessage()}
+              type="button"
+              disabled={isLoading || !input.trim()}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Send message"
+            >
+              ➤
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

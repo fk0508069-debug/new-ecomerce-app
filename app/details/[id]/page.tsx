@@ -20,7 +20,7 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   // Fetch product
   useEffect(() => {
     if (!productId) {
@@ -251,13 +251,28 @@ export default function ProductDetailPage() {
                   )}
 
                   {/* Description under name */}
-                  {product.description && (
-                    <div className="mt-4">
-                      <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
-                        {product.description}
-                      </p>
-                    </div>
-                  )}
+                 {product.description && (
+  <div className="mt-4">
+    <p
+      className={`text-xs sm:text-sm leading-relaxed text-slate-600 ${
+        isDescriptionExpanded ? "" : "line-clamp-3"
+      }`}
+    >
+      {product.description}
+    </p>
+
+    {/* Only show the toggle button if the description is long enough */}
+    {product.description.length > 120 && (
+      <button
+        type="button"
+        onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+        className="mt-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline"
+      >
+        {isDescriptionExpanded ? "See less" : "See more"}
+      </button>
+    )}
+  </div>
+)}
 
                   {product.rating && (
                     <div className="mt-3.5">
