@@ -234,6 +234,84 @@ const CATEGORY_DATA = {
   },
 };
 
+// Image compression function
+const compressImage = (file, maxSizeKB = 200, quality = 0.8) => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Only image files are allowed"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        // Calculate optimal dimensions (max 1200px width/height for quality)
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 1200;
+
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Start with high quality and reduce until under maxSizeKB
+        let currentQuality = quality;
+        let compressedDataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+        
+        // Reduce quality until size is under limit
+        while (compressedDataUrl.length > maxSizeKB * 1024 && currentQuality > 0.1) {
+          currentQuality -= 0.05;
+          compressedDataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+        }
+
+        // If still too large, try reducing dimensions
+        if (compressedDataUrl.length > maxSizeKB * 1024) {
+          let scaleFactor = 0.8;
+          let newWidth = Math.round(width * scaleFactor);
+          let newHeight = Math.round(height * scaleFactor);
+          
+          while (compressedDataUrl.length > maxSizeKB * 1024 && scaleFactor > 0.3) {
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            compressedDataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+            scaleFactor -= 0.1;
+            newWidth = Math.round(width * scaleFactor);
+            newHeight = Math.round(height * scaleFactor);
+          }
+        }
+
+        // Get file size in KB
+        const sizeInKB = (compressedDataUrl.length * 3) / 4 / 1024; // Approximate base64 size
+        
+        resolve({
+          dataUrl: compressedDataUrl,
+          sizeKB: Math.round(sizeInKB),
+          width: canvas.width,
+          height: canvas.height,
+          originalName: file.name,
+        });
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+};
+
 export default function AddProductPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -246,13 +324,14 @@ export default function AddProductPage() {
     subcategory: "",
     subsubcategory: "",
     stock: "0",
-    isHero: false, // new field
+    isHero: false,
   });
 
   const [images, setImages] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) {
@@ -294,36 +373,33 @@ export default function AddProductPage() {
 
   const handleImageUpload = async (files) => {
     if (!files?.length) return;
+    setIsCompressing(true);
+    setError("");
 
     try {
-      const imagePromises = Array.from(files).map(
-        (file) =>
-          new Promise((resolve, reject) => {
-            if (!file.type.startsWith("image/")) {
-              reject(new Error("Only image files are allowed"));
-              return;
-            }
+      const imagePromises = Array.from(files).map(async (file) => {
+        try {
+          const compressed = await compressImage(file, 200, 0.85);
+          
+          // Log compression info (for debugging)
+          console.log(`✅ ${compressed.originalName}: ${compressed.sizeKB}KB, ${compressed.width}x${compressed.height}`);
+          
+          return compressed.dataUrl;
+        } catch (err) {
+          throw new Error(`Failed to compress ${file.name}: ${err.message}`);
+        }
+      });
 
-            const reader = new FileReader();
-
-            reader.onload = () => resolve(reader.result);
-
-            reader.onerror = () =>
-              reject(new Error("Failed to read image"));
-
-            reader.readAsDataURL(file);
-          })
-      );
-
-      const result = await Promise.all(imagePromises);
-
-      setImages((prev) => [...prev, ...result]);
-      setError("");
+      const results = await Promise.all(imagePromises);
+      
+      setImages((prev) => [...prev, ...results]);
     } catch (err) {
       setError(
         err.message ||
           "One or more images could not be uploaded. Please try again."
       );
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -399,7 +475,7 @@ export default function AddProductPage() {
           subsubcategory: formData.subsubcategory,
           stock: Number(formData.stock || 0),
           images,
-          isHero: formData.isHero, // send the hero flag
+          isHero: formData.isHero,
         }),
       });
 
@@ -710,7 +786,7 @@ export default function AddProductPage() {
                 )}
             </div>
 
-            {/* 🆕 Hero Section Toggle */}
+            {/* Hero Section Toggle */}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-start gap-4">
                 <div className="mt-1 flex h-6 items-center">
@@ -752,6 +828,11 @@ export default function AddProductPage() {
                 <span className="ml-2 text-xs font-normal text-slate-500">
                   ({images.length} uploaded)
                 </span>
+                {isCompressing && (
+                  <span className="ml-2 text-xs font-normal text-amber-600">
+                    Compressing...
+                  </span>
+                )}
               </label>
 
               {/* Drag and Drop */}
@@ -772,6 +853,7 @@ export default function AddProductPage() {
                   multiple
                   onChange={(e) => handleImageUpload(e.target.files)}
                   className="absolute inset-0 cursor-pointer opacity-0"
+                  disabled={isCompressing}
                 />
 
                 <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
@@ -780,12 +862,11 @@ export default function AddProductPage() {
                   </div>
 
                   <p className="mt-4 text-sm font-semibold text-slate-900">
-                    Drag images here or click to browse
+                    {isCompressing ? "Compressing images..." : "Drag images here or click to browse"}
                   </p>
 
                   <p className="mt-1 text-xs text-slate-600">
-                    You can upload multiple images. Supported
-                    formats: JPG, PNG, WebP
+                    Images will be compressed to ~200KB. Supported formats: JPG, PNG, WebP
                   </p>
                 </div>
               </div>
@@ -794,40 +875,49 @@ export default function AddProductPage() {
               {images.length > 0 && (
                 <div className="mt-5">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Preview
+                    Preview ({images.length} images)
                   </p>
 
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                    {images.map((image, index) => (
-                      <div key={index} className="group relative">
-                        <Image
-                          src={image}
-                          alt={`Product preview ${index + 1}`}
-                          fill
-                          unoptimized
-                          className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -right-2 -top-2 hidden rounded-full bg-red-500 p-1.5 text-white shadow-lg transition hover:bg-red-600 group-hover:block"
-                          title="Remove image"
-                        >
-                          <X size={16} />
-                        </button>
-
-                        <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white">
-                          {index + 1}
-                        </div>
-
-                        {index === 0 && (
-                          <div className="absolute left-2 top-2 rounded-md bg-amber-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-                            Main
+                    {images.map((image, index) => {
+                      // Calculate approximate size from base64 string
+                      const sizeInKB = Math.round((image.length * 3) / 4 / 1024);
+                      
+                      return (
+                        <div key={index} className="group relative aspect-square">
+                          <div className="relative h-full w-full">
+                            <img
+                              src={image}
+                              alt={`Product preview ${index + 1}`}
+                              className="h-full w-full rounded-lg object-cover ring-1 ring-slate-200"
+                            />
                           </div>
-                        )}
-                      </div>
-                    ))}
+
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -right-2 -top-2 hidden rounded-full bg-red-500 p-1.5 text-white shadow-lg transition hover:bg-red-600 group-hover:block"
+                            title="Remove image"
+                          >
+                            <X size={16} />
+                          </button>
+
+                          <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white">
+                            {index + 1}
+                          </div>
+
+                          <div className="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
+                            {sizeInKB}KB
+                          </div>
+
+                          {index === 0 && (
+                            <div className="absolute left-2 top-2 rounded-md bg-amber-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                              Main
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -837,13 +927,18 @@ export default function AddProductPage() {
             <div className="border-t border-slate-100 pt-6">
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || isCompressing}
                 className="w-full rounded-lg bg-linear-to-r from-amber-500 to-amber-600 px-6 py-3.5 font-semibold text-white shadow-lg transition hover:from-amber-600 hover:to-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {saving ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     Saving Product...
+                  </span>
+                ) : isCompressing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Compressing Images...
                   </span>
                 ) : (
                   "Save Product"

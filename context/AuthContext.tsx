@@ -14,6 +14,7 @@ type AuthContextType = {
   signup: (email: string, password: string, name?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   loading: boolean;
 };
 
@@ -93,8 +94,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+
+      const mergedUser = { ...currentUser, ...updates };
+      localStorage.setItem("user", JSON.stringify(mergedUser));
+      return mergedUser;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, signup, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, signup, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -45,6 +46,15 @@ export default function Navbar({ onSearch }: NavbarProps) {
 </div>
         {/* Desktop Navigation & Actions */}
         <div className="hidden items-center gap-5 md:flex">
+          {user?.role === "admin" && (
+            <Link
+              href="http://localhost:3001"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 hover:text-amber-600"
+            >
+              Messages
+            </Link>
+          )}
+
           <Link
             href="/cart"
             className="relative flex items-center gap-1.5 rounded-lg p-2 text-gray-700 transition hover:bg-gray-100 hover:text-amber-600"

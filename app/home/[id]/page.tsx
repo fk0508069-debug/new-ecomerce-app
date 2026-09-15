@@ -25,19 +25,25 @@ export default function HomePage() {
   const { user } = useAuth();
 
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const res = await fetch("/api/products?limit=8"); // adjust query as needed
-        const data = await res.json();
-        if (data.products) {
-          setProducts(data.products);
-        }
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      } finally {
-        setLoading(false);
-      }
+   async function fetchProducts() {
+  try {
+    const res = await fetch("/api/products?limit=8", {
+      next: {
+        revalidate: 3600,
+      },
+    });
+
+    const data = await res.json();
+
+    if (data.products) {
+      setProducts(data.products);
     }
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
+  } finally {
+    setLoading(false);
+  }
+}
     fetchProducts();
   }, []);
 
@@ -47,7 +53,10 @@ export default function HomePage() {
     try {
       const res = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
-      });
+    
+      }
+   
+    );
 
       if (!res.ok) {
         const data = await res.json();
@@ -104,7 +113,6 @@ export default function HomePage() {
         </div>
       )}
     </section>
-
     {/* ChatBot */}
     <ChatBot />
   </main>

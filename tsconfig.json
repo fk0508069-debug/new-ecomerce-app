@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "lib/mongodb.js", "app/login/page.jsx", "app/page.tsx", "app/index/[id]/page.tsx", "app/signup/page.jsx", "components/Navbar.tsx", "app/details/[id]/page.tsx", "app/addProduct/page.jsx", "app/api/products/search/route.js"  ],
+, "lib/mongodb.js", "app/login/page.jsx", "app/page.tsx", "app/index/[id]/page.tsx", "app/signup/page.jsx", "components/Navbar.tsx", "app/details/[id]/page.tsx", "app/addProduct/page.jsx", "app/api/products/search/route.js", "components/profileSibeBar.tsx", "server/auth.js"  ],
   "exclude": ["node_modules"]
 }

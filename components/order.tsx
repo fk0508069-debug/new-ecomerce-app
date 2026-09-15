@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
-
+import Link from "next/link";
 type OrderItem = {
   productId: string;
   tracking_number: number; // keep if needed per item, but not used
@@ -410,6 +410,9 @@ export default function OrderDashboard() {
               <RefreshIcon spinning={refreshing} />
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
+
+            <Link className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-blue-400 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+ href='/messages'>messages</Link>
           </div>
 
           {/* ERROR */}

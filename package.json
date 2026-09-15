@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
-    
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -16,13 +15,16 @@
     "jsonwebtoken": "^9.0.3",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^1.31.0",
-    "mongoose": "^9.9.2",
+    "mongoose": "^9.10.0",
     "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.85.0",
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.10.1",
+    "session": "^0.1.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "swr": "^2.5.1",
     "zod": "^3.25.76"
   },

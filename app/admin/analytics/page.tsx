@@ -1,7 +1,7 @@
 "use client";
 import ChatBot from "@/components/chatBot";
 import Orders from "@/components/order";
-import user from "@/models/User";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -18,7 +18,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { id } from "zod/v4/locales";
 
 type Order = {
   _id: string;
@@ -31,10 +30,6 @@ type Order = {
     quantity: number;
   }[];
 };
-
-type user = {
-  _id: string
-}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
@@ -59,8 +54,8 @@ const formatDate = (date: string) =>
   });
 
 export default function AnalyticsPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [user] = useState('')
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState("30");
