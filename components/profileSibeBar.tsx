@@ -29,7 +29,6 @@ interface PasswordFieldProps {
   disabled?: boolean;
 }
 
-/* Moved outside the main component so React does not re-mount inputs on state updates */
 function PasswordField({
   label,
   field,
@@ -77,42 +76,59 @@ export default function ProfileSidebar() {
   const { user, logout, updateUser } = useAuth();
   const router = useRouter();
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const [supportForm, setSupportForm] = useState({ phone: "", message: "" });
-  const [passwordForm, setPasswordForm] = useState({
+  const [supportForm, setSupportForm] = useState<{ phone: string; message: string }>({ 
+    phone: "", 
+    message: "" 
+  });
+  
+  const [passwordForm, setPasswordForm] = useState<{
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }>({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-  const [usernameForm, setUsernameForm] = useState({
-    newUsername: user?.name || "",
+  
+  // Explicitly typed state
+  const [usernameForm, setUsernameForm] = useState<{ newUsername: string }>({
+    newUsername: user?.name ?? "",
   });
 
-  const [showPassword, setShowPassword] = useState({
+  const [showPassword, setShowPassword] = useState<{
+    current: boolean;
+    new: boolean;
+    confirm: boolean;
+  }>({
     current: false,
     new: false,
     confirm: false,
   });
 
-  const toggleShow = (field: "current" | "new" | "confirm") =>
+  const toggleShow = (field: "current" | "new" | "confirm"): void =>
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  // Explicitly typed updater to fix Vercel's strict 'undefined' error
   useEffect(() => {
-    if (user?.name) {
-      setUsernameForm((prev) =>
-        prev.newUsername ? prev : { newUsername: user.name }
-      );
-    }
+    const name: string = user?.name || "";
+    if (!name) return;
+
+    setUsernameForm((prev: { newUsername: string }): { newUsername: string } => {
+      if (prev.newUsername) return prev;
+      return { newUsername: name };
+    });
   }, [user?.name]);
 
-  const closePanel = () => {
+  const closePanel = (): void => {
     setActivePanel(null);
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     setShowPassword({ current: false, new: false, confirm: false });
   };
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     try {
       await logout();
       router.push("/");
@@ -121,7 +137,7 @@ export default function ProfileSidebar() {
     }
   };
 
-  const handleSupportSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSupportSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!user) {
       alert("Please log in to send a support message.");
@@ -155,7 +171,7 @@ export default function ProfileSidebar() {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!user) {
       alert("Please log in to update your password.");
@@ -199,14 +215,14 @@ export default function ProfileSidebar() {
     }
   };
 
-  const handleUsernameSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUsernameSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!user) {
       alert("Please log in to update your username.");
       return;
     }
 
-    const trimmedUsername = usernameForm.newUsername.trim();
+    const trimmedUsername: string = usernameForm.newUsername.trim();
     if (!trimmedUsername) {
       alert("Username cannot be empty.");
       return;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import ChatBot from "@/components/chatBot";
@@ -19,6 +19,29 @@ import {
   Mail,
   ShieldCheck,
 } from "lucide-react";
+
+/* ---------------- types ---------------- */
+type OrderItem = {
+  name?: string;
+  quantity?: number;
+};
+
+type Order = {
+  id?: string;
+  _id?: string;
+  status?: string;
+  tracking_number?: string;
+  createdAt?: string;
+  total?: number | string;
+  items?: OrderItem[];
+};
+
+type StatCardProps = {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+  tone?: "slate" | "amber" | "emerald";
+};
 
 /* ---------------- status helpers ---------------- */
 const getStatusStyles = (status = "") => {
@@ -73,7 +96,7 @@ export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams();
   const { user, logout, loading } = useAuth();
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState("");
   const [showAllOrders, setShowAllOrders] = useState(false);
@@ -104,10 +127,13 @@ export default function UserProfilePage() {
         );
         if (!response.ok) throw new Error("Unable to fetch orders");
 
-        const payload = await response.json();
-        const list = Array.isArray(payload)
+        const payload = (await response.json()) as
+          | Order[]
+          | { orders?: Order[] };
+
+        const list: Order[] = Array.isArray(payload)
           ? payload
-          : Array.isArray(payload?.orders)
+          : Array.isArray(payload.orders)
             ? payload.orders
             : [];
 
@@ -128,7 +154,7 @@ export default function UserProfilePage() {
   const activeOrders = useMemo(
     () =>
       orders.filter(
-        (o) =>
+        (o: Order) =>
           !HIDDEN_STATUSES.includes((o.status || "pending").toLowerCase())
       ),
     [orders]
@@ -154,12 +180,12 @@ export default function UserProfilePage() {
     : activeOrders.slice(0, 2);
 
   const totalOrders = activeOrders.length;
-  const processing = activeOrders.filter((o) =>
+  const processing = activeOrders.filter((o: Order) =>
     ["processing", "shipped"].includes((o.status || "").toLowerCase())
   ).length;
   const pending = totalOrders - processing;
   const totalSpent = activeOrders.reduce(
-    (s, o) => s + Number(o.total || 0),
+    (s: number, o: Order) => s + Number(o.total || 0),
     0
   );
   const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
@@ -318,7 +344,7 @@ export default function UserProfilePage() {
                         No active orders
                       </p>
                       <p className="mt-1 max-w-xs text-xs text-slate-400">
-                        You're all caught up. New orders will show up here.
+                        You&apos;re all caught up. New orders will show up here.
                       </p>
                       <Link
                         href="/"
@@ -329,7 +355,7 @@ export default function UserProfilePage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {displayedOrders.map((order, idx) => {
+                      {displayedOrders.map((order: Order, idx: number) => {
                         const orderKey =
                           order.id || order._id || `order-${idx}`;
                         const status = order.status || "Pending";
@@ -384,17 +410,19 @@ export default function UserProfilePage() {
                                 </span>
                                 {order.items && order.items.length > 0 ? (
                                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                    {order.items.map((item, itemIdx) => (
-                                      <span
-                                        key={`${orderKey}-${itemIdx}`}
-                                        className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
-                                      >
-                                        {item.name || "Product"}
-                                        <span className="ml-1 font-semibold text-slate-900">
-                                          ×{item.quantity || 1}
+                                    {order.items.map(
+                                      (item: OrderItem, itemIdx: number) => (
+                                        <span
+                                          key={`${orderKey}-${itemIdx}`}
+                                          className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
+                                        >
+                                          {item.name || "Product"}
+                                          <span className="ml-1 font-semibold text-slate-900">
+                                            ×{item.quantity || 1}
+                                          </span>
                                         </span>
-                                      </span>
-                                    ))}
+                                      )
+                                    )}
                                   </div>
                                 ) : (
                                   <p className="mt-1 text-xs text-slate-400">
@@ -453,8 +481,8 @@ export default function UserProfilePage() {
 }
 
 /* ---------------- StatCard helper ---------------- */
-function StatCard({ icon, label, value, tone = "slate" }) {
-  const tones = {
+function StatCard({ icon, label, value, tone = "slate" }: StatCardProps) {
+  const tones: Record<"slate" | "amber" | "emerald", string> = {
     slate: "bg-slate-100 text-slate-700",
     amber: "bg-amber-50 text-amber-700",
     emerald: "bg-emerald-50 text-emerald-700",
