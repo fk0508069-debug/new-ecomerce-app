@@ -48,7 +48,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
         <div className="hidden items-center gap-5 md:flex">
           {user?.role === "admin" && (
             <Link
-              href="http://localhost:3001"
+              href="https://chat-system-app-bice.vercel.app/"
               className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 hover:text-amber-600"
             >
               Messages
