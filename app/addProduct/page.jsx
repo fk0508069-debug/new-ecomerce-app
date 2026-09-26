@@ -886,9 +886,11 @@ export default function AddProductPage() {
                       return (
                         <div key={index} className="group relative aspect-square">
                           <div className="relative h-full w-full">
-                            <img
+                            <Image
                               src={image}
                               alt={`Product preview ${index + 1}`}
+                              fill
+                              unoptimized
                               className="h-full w-full rounded-lg object-cover ring-1 ring-slate-200"
                             />
                           </div>

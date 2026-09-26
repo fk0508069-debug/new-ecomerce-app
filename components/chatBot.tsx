@@ -10,12 +10,14 @@ import React, {
   type ReactNode,
   type SVGProps,
 } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
 // ============================================================
 // TYPES & CONFIG
 // ============================================================
 const POLL_MS = 2000;
+const MAX_FILE_MB = 8;
 
 type Tab = "ai" | "support";
 
@@ -25,13 +27,23 @@ interface AiMessage {
   sender: "user" | "bot";
 }
 
+interface Attachment {
+  url: string;
+  name: string;
+  mime: string;
+  size: number;
+  kind: "image" | "file";
+}
+
 interface SupportMessage {
   _id: string;
   text: string;
   senderRole?: "customer" | "agent" | string;
   senderName?: string;
+  attachments?: Attachment[];
   createdAt: string | Date;
   mine: boolean;
+  _pending?: boolean;
 }
 
 interface QuickQuestion {
@@ -65,9 +77,7 @@ function parseAndRenderText(text: string): ReactNode {
     const start = match.index;
     const end = start + match[0].length;
 
-    if (start > lastIndex) {
-      parts.push(text.substring(lastIndex, start));
-    }
+    if (start > lastIndex) parts.push(text.substring(lastIndex, start));
 
     if (match[2] && match[3]) {
       parts.push(
@@ -109,9 +119,7 @@ function parseAndRenderText(text: string): ReactNode {
     lastIndex = end;
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
-  }
+  if (lastIndex < text.length) parts.push(text.substring(lastIndex));
   return parts;
 }
 
@@ -163,6 +171,16 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
   const [supportError, setSupportError] = useState<string | null>(null);
   const [unreadSupport, setUnreadSupport] = useState<number>(0);
 
+  // Image state
+  const [pendingFiles, setPendingFiles] = useState<
+    { file: File; previewUrl: string | null; uploading: boolean; url: string | null;
+      name: string; mime: string; size: number; kind: "image" | "file" }[]
+  >([]);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [lightbox, setLightbox] = useState<Attachment | null>(null);
+  const preuploadedRef = useRef<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const lastSeenSupportCount = useRef<number>(0);
   const aiEndRef = useRef<HTMLDivElement | null>(null);
   const supportEndRef = useRef<HTMLDivElement | null>(null);
@@ -173,58 +191,54 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
 
   useEffect(() => {
     supportEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [supportMessages, tab]);
+  }, [supportMessages, tab, pendingFiles]);
 
   // ----------------------------------------------------------
   // Support: Load & Poll
   // ----------------------------------------------------------
   const fetchSupportThread = useCallback(async () => {
     if (!activeUserId) return;
-
     try {
       const res = await fetch(`/api/support/thread?userId=${encodeURIComponent(activeUserId)}`);
       if (!res.ok) return;
-
       const data = await res.json().catch(() => ({ messages: [] }));
       const list: SupportMessage[] = (Array.isArray(data.messages) ? data.messages : []).map(
         (m: any) => ({
           _id: m._id,
-          text: m.text,
+          text: m.text || "",
           senderRole: m.senderRole,
           senderName: m.senderName,
+          attachments: m.attachments || [],
           createdAt: m.createdAt,
           mine: m.senderRole === "customer",
         })
       );
       setSupportMessages(list);
     } catch {
-      // server error handling
+      // ignore
     }
   }, [activeUserId]);
 
   useEffect(() => {
     if (!isOpen || !activeUserId) return;
-
     fetchSupportThread();
     const id = setInterval(fetchSupportThread, POLL_MS);
     return () => clearInterval(id);
   }, [isOpen, activeUserId, fetchSupportThread]);
 
-  // Mark Support messages read
+  // Mark read
   useEffect(() => {
     if (!isOpen || tab !== "support" || !activeUserId) return;
-
     fetch("/api/support/read", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: activeUserId }),
     }).catch(() => {});
-
     setUnreadSupport(0);
     lastSeenSupportCount.current = supportMessages.length;
   }, [isOpen, tab, activeUserId, supportMessages.length]);
 
-  // Track unread agent messages while on AI tab
+  // Unread badge while on AI tab
   useEffect(() => {
     if (!isOpen) return;
     if (tab === "support") {
@@ -232,7 +246,6 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
       setUnreadSupport(0);
       return;
     }
-
     const last = supportMessages[supportMessages.length - 1];
     if (last && last.senderRole === "agent") {
       const delta = supportMessages.length - lastSeenSupportCount.current;
@@ -241,7 +254,7 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
   }, [supportMessages, tab, isOpen]);
 
   // ----------------------------------------------------------
-  // Actions: AI Chat
+  // AI Chat
   // ----------------------------------------------------------
   const sendAiMessage = async (questionOverride?: string) => {
     const question = (questionOverride ?? aiInput).trim();
@@ -258,31 +271,18 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId || activeUserId, question }),
+        body: JSON.stringify({ session_id: sessionId || activeUserId || null, question }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API returned ${response.status}: ${errorText}`);
-      }
-
+      if (!response.ok) throw new Error(`API returned ${response.status}`);
       const data = await response.json();
       setAiMessages((prev) => [
         ...prev,
-        {
-          id: `${Date.now()}-${Math.random()}`,
-          text: data.answer || "The AI returned no answer.",
-          sender: "bot",
-        },
+        { id: `${Date.now()}-${Math.random()}`, text: data.answer || "The AI returned no answer.", sender: "bot" },
       ]);
     } catch {
       setAiMessages((prev) => [
         ...prev,
-        {
-          id: `${Date.now()}-${Math.random()}`,
-          text: "❌ Could not connect to the AI server. Please try again.",
-          sender: "bot",
-        },
+        { id: `${Date.now()}-${Math.random()}`, text: "❌ Could not connect to the AI server. Please try again.", sender: "bot" },
       ]);
     } finally {
       setAiLoading(false);
@@ -297,12 +297,64 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
   };
 
   // ----------------------------------------------------------
-  // Actions: Support Agent Chat
+  // Support: image picking + upload
+  // ----------------------------------------------------------
+  const onPickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 5);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!files.length) return;
+
+    const staged = files.map((f) => ({
+      file: f,
+      previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+      uploading: true,
+      url: null as string | null,
+      name: f.name,
+      mime: f.type,
+      size: f.size,
+      kind: (f.type.startsWith("image/") ? "image" : "file") as "image" | "file",
+    }));
+    setPendingFiles((p) => [...p, ...staged]);
+    setUploading(true);
+
+    const uploaded: Attachment[] = [];
+    for (const item of staged) {
+      if (item.file.size > MAX_FILE_MB * 1024 * 1024) {
+        setSupportError(`"${item.file.name}" exceeds ${MAX_FILE_MB} MB`);
+        continue;
+      }
+      const fd = new FormData();
+      fd.append("file", item.file);
+      try {
+        const r = await fetch("/api/upload", { method: "POST", body: fd });
+        if (r.ok) {
+          const d = await r.json();
+          uploaded.push(d.attachment);
+        } else {
+          const d = await r.json().catch(() => ({}));
+          setSupportError(d.error || "Upload failed");
+        }
+      } catch {
+        setSupportError("Upload failed");
+      }
+    }
+    setUploading(false);
+    setPendingFiles([]);
+    preuploadedRef.current = [...preuploadedRef.current, ...uploaded];
+  };
+
+  const removePending = (idx: number) => {
+    setPendingFiles((p) => p.filter((_, i) => i !== idx));
+  };
+
+  // ----------------------------------------------------------
+  // Support: send
   // ----------------------------------------------------------
   const sendSupportMessage = async (e?: FormEvent) => {
     e?.preventDefault();
     const text = supportInput.trim();
-    if (!text || !activeUserId || supportSending) return;
+    const attachments = preuploadedRef.current;
+    if ((!text && attachments.length === 0) || !activeUserId || supportSending) return;
 
     setSupportError(null);
     setSupportInput("");
@@ -312,17 +364,19 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
       _id: `tmp-${Date.now()}`,
       text,
       senderRole: "customer",
+      attachments,
       createdAt: new Date().toISOString(),
       mine: true,
+      _pending: true,
     };
-
     setSupportMessages((prev) => [...prev, tmp]);
+    preuploadedRef.current = [];
 
     try {
       const res = await fetch("/api/support/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: activeUserId, text }),
+        body: JSON.stringify({ userId: activeUserId, text, attachments }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -342,6 +396,9 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
     }
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <>
       {/* FLOATING TOGGLE BUTTON */}
@@ -349,7 +406,7 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
         <button
           onClick={() => setIsOpen(true)}
           type="button"
-          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-teal-600 active:scale-95"
+          className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-teal-600 active:scale-95 sm:bottom-6 sm:right-6"
           aria-label="Open assistant"
         >
           <svg
@@ -373,20 +430,19 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
         </button>
       )}
 
-      {/* CHAT DRAWER */}
+      {/* CHAT DRAWER — responsive */}
       <div
-        className={`fixed bottom-20 right-6 z-50 flex h-[600px] w-full max-w-[380px] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-300 ease-in-out ${
-          isOpen
-            ? "translate-y-0 opacity-100 pointer-events-auto"
-            : "translate-y-10 opacity-0 pointer-events-none"
-        }`}
+        className={`fixed z-50 flex flex-col overflow-hidden bg-white shadow-2xl transition-all duration-300 ease-in-out
+          inset-0 rounded-none
+          sm:inset-auto sm:bottom-20 sm:right-6 sm:h-[600px] sm:max-h-[calc(100vh-6rem)] sm:w-full sm:max-w-[380px] sm:rounded-3xl
+          ${isOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-10 opacity-0 pointer-events-none"}`}
       >
         {/* HEADER */}
-        <div className="relative flex flex-col items-center bg-white pb-0 pt-6">
+        <div className="relative flex flex-col items-center bg-white pb-0 pt-5 sm:pt-6">
           <button
             onClick={() => setIsOpen(false)}
             type="button"
-            className="absolute left-4 top-5 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+            className="absolute left-3 top-4 flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 sm:left-4 sm:top-5 sm:h-8 sm:w-8"
             aria-label="Close chat"
           >
             <svg
@@ -460,14 +516,10 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
                 {aiMessages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex flex-col ${
-                      message.sender === "user" ? "items-end" : "items-start"
-                    }`}
+                    className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"}`}
                   >
                     {message.sender === "bot" && (
-                      <span className="mb-1 text-[11px] font-medium text-gray-400">
-                        AI assistant
-                      </span>
+                      <span className="mb-1 text-[11px] font-medium text-gray-400">AI assistant</span>
                     )}
                     <div
                       className={`max-w-[90%] px-4 py-3 text-sm leading-relaxed shadow-sm ${
@@ -492,9 +544,7 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
 
                 {aiLoading && (
                   <div className="flex flex-col items-start">
-                    <span className="mb-1 text-[11px] font-medium text-gray-400">
-                      AI assistant
-                    </span>
+                    <span className="mb-1 text-[11px] font-medium text-gray-400">AI assistant</span>
                     <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-none bg-gray-100 px-4 py-3 text-xs text-gray-500 shadow-sm">
                       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
                       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
@@ -507,9 +557,7 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
             </div>
 
             <div className="bg-white px-4 pb-3 pt-2">
-              <div className="mb-2 text-right text-[11px] font-medium text-gray-400">
-                Suggestions
-              </div>
+              <div className="mb-2 text-right text-[11px] font-medium text-gray-400">Suggestions</div>
               <div className="flex flex-col gap-2">
                 {quickQuestions.map((q) => (
                   <button
@@ -574,32 +622,70 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
                 )}
 
                 {supportMessages.map((m) => (
-                  <div
-                    key={m._id}
-                    className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}
-                  >
+                  <div key={m._id} className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}>
                     {!m.mine && (
                       <span className="mb-1 text-[11px] font-medium text-gray-400">
                         {m.senderName || "Support"}
                       </span>
                     )}
                     <div
-                      className={`max-w-[90%] px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                      className={`max-w-[85%] px-3 py-2.5 text-sm leading-relaxed shadow-sm ${
                         m.mine
                           ? "rounded-2xl rounded-br-none bg-blue-600 text-white"
                           : "rounded-2xl rounded-tl-none bg-gray-100 text-gray-800"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                      <div
-                        className={`mt-1 text-[10px] ${
-                          m.mine ? "text-white/70" : "text-gray-400"
-                        }`}
-                      >
-                        {new Date(m.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      {/* Attachments */}
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className="mb-1.5 grid grid-cols-2 gap-1.5">
+                          {m.attachments.map((a, ai) =>
+                            a.kind === "image" ? (
+                              <Image
+                                key={ai}
+                                src={a.url}
+                                alt={a.name}
+                                width={176}
+                                height={176}
+                                unoptimized
+                                onClick={() => setLightbox(a)}
+                                className="max-h-44 cursor-zoom-in rounded-lg object-cover transition hover:opacity-90"
+                              />
+                            ) : (
+                              <a
+                                key={ai}
+                                href={a.url}
+                                download={a.name}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={`col-span-2 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs ${
+                                  m.mine
+                                    ? "bg-white/15 hover:bg-white/25"
+                                    : "bg-white hover:bg-slate-50 border border-slate-200"
+                                }`}
+                              >
+                                <FileIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{a.name}</span>
+                                <span className="ml-auto shrink-0 opacity-70">
+                                  {(a.size / 1024).toFixed(0)} KB
+                                </span>
+                              </a>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                      {m.text && <p className="whitespace-pre-wrap break-words">{m.text}</p>}
+
+                      <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
+                        m.mine ? "text-white/70" : "text-gray-400"
+                      }`}>
+                        <span>
+                          {new Date(m.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        {m.mine && !m._pending && <DoubleCheckIcon className="h-3 w-3" />}
                       </div>
                     </div>
                   </div>
@@ -609,14 +695,71 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
             </div>
 
             {supportError && (
-              <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-[11px] text-red-600">
-                {supportError}
+              <div className="flex items-center gap-2 border-t border-red-100 bg-red-50 px-4 py-2 text-[11px] text-red-600">
+                <span className="flex-1">{supportError}</span>
+                <button onClick={() => setSupportError(null)} className="text-red-400 hover:text-red-600">✕</button>
               </div>
             )}
 
             <div className="mt-auto bg-white">
               <div className="h-[2px] w-full bg-gradient-to-r from-blue-200 via-pink-200 to-teal-200" />
-              <form onSubmit={sendSupportMessage} className="flex items-center gap-2 p-3">
+
+              {/* Previews */}
+              {pendingFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 border-t border-gray-100 px-3 pt-3">
+                  {pendingFiles.map((p, i) => (
+                    <div key={i} className="group relative h-14 w-14 overflow-hidden rounded-lg border border-gray-200">
+                      {p.previewUrl ? (
+                        <Image
+                          src={p.previewUrl}
+                          alt={p.name}
+                          width={56}
+                          height={56}
+                          unoptimized
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gray-50">
+                          <FileIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+                      {p.uploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePending(i)}
+                        className="absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white group-hover:flex"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <form onSubmit={sendSupportMessage} className="flex items-end gap-2 p-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,text/plain,.zip"
+                  className="hidden"
+                  onChange={onPickFiles}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  title="Attach image"
+                  disabled={supportSending || uploading}
+                >
+                  <PaperclipIcon className="h-4.5 w-4.5" />
+                </button>
+
                 <input
                   type="text"
                   value={supportInput}
@@ -624,25 +767,54 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
                   onKeyDown={handleSupportKeyDown}
                   placeholder="Message support…"
                   disabled={supportSending}
-                  className="flex-1 border-none bg-transparent text-sm text-gray-800 outline-none placeholder-gray-400 focus:ring-0"
+                  className="flex-1 border-none bg-transparent py-2 text-sm text-gray-800 outline-none placeholder-gray-400 focus:ring-0"
                 />
+
                 <button
                   type="submit"
-                  disabled={supportSending || !supportInput.trim()}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-white transition-all ${
-                    supportInput.trim() && !supportSending
+                  disabled={supportSending || uploading || (!supportInput.trim() && preuploadedRef.current.length === 0)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full text-white transition-all ${
+                    (supportInput.trim() || preuploadedRef.current.length > 0) && !supportSending && !uploading
                       ? "bg-blue-600 hover:bg-blue-700 active:scale-95"
                       : "bg-gray-200 cursor-not-allowed"
                   }`}
                   aria-label="Send message"
                 >
-                  <SendIcon className="h-4 w-4" />
+                  {supportSending ? (
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <SendIcon className="h-4 w-4" />
+                  )}
                 </button>
               </form>
             </div>
           </>
         )}
       </div>
+
+      {/* LIGHTBOX */}
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        >
+          <Image
+            src={lightbox.url}
+            alt={lightbox.name}
+            width={1200}
+            height={900}
+            unoptimized
+            className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl"
+          />
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </>
   );
 }
@@ -651,46 +823,41 @@ export default function CustomerSupport({ userId: fallbackUserId }: CustomerSupp
 // ICONS
 // ============================================================
 const SparkleIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
   </svg>
 );
 
 const HeadsetIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
     <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
   </svg>
 );
 
 const SendIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M12 19V5" />
     <path d="M5 12l7-7 7 7" />
+  </svg>
+);
+
+const PaperclipIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
+
+const FileIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <path d="M14 2v6h6" />
+  </svg>
+);
+
+const DoubleCheckIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M1 12l4 4L15 6" />
+    <path d="M9 16l4 4L23 8" />
   </svg>
 );

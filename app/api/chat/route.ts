@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const FASTAPI_URL =
-  process.env.FASTAPI_URL || "http://127.0.0.1:8000";
+  process.env.FASTAPI_URL || "https://ai-lang-grpgh-system.vercel.app";
 
 export async function POST(request: NextRequest) {
   try {
